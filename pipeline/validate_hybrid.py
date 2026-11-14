@@ -21,7 +21,7 @@ def main():
     td = pl.read_parquet(INTERIM / "tileday_dn.parquet").filter((pl.col("mask") & 7) == 7)
     f3 = fit(td.filter(pl.col("year").is_in(TRAIN)), "ta", "M3", 200.0)
     m3 = predict(td, f3).group_by("tile", "ph", "d").agg(pl.col("pred").sum().alias("M3"))
-    x = p.join(m3, on=["tile", "ph", "d"], how="left").with_columns(pl.col("M3").fill_null(0.0))
+    x = p.join(m3, on=["tile", "ph", "d"], how="left").with_columns(pl.col("M3").fill_null(0.0)).sort("tile", "ph", "d")
     um = ["tile", "ph", "year", "month"]
     x = x.with_columns(pl.when(pl.col("M3") > 0).then(pl.col("ML")).otherwise(0.0).alias("_ml"))
     x = x.with_columns(pl.col("M3").sum().over(um).alias("_m"), pl.col("_ml").sum().over(um).alias("_s"))

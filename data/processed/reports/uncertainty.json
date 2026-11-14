@@ -1,5 +1,5 @@
 {
- "version": "1.3.0",
+ "version": "1.3.1",
  "source": "held-out validation, years 2013/2017/2021/2025 (reports/validation_final.md); nmae = sum|error| / sum(observed S-NPP); modis_ta daily from reports/validation_hybrid.md",
  "how_to_pick": "Per day use coverage.regime; for regime 3 (viirs) check coverage.mask bit 4 (S-NPP): set -> direct S-NPP, clear -> NOAA-20-filled.",
  "regimes": {

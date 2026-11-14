@@ -1,5 +1,5 @@
 import { idxOf, isoOf, SENSORS, SENSOR_LABELS } from './data.js';
-import { legendLines } from './accuracy.js';
+import { dayClass, legendLines } from './accuracy.js';
 
 function save(blob, name) {
   const a = document.createElement('a');
@@ -25,7 +25,9 @@ export function downloadCSV({ meta, agg, sel, from, to, cmp, ref, win, skipT, fi
     q(`# harmonized = S-NPP-VIIRS-equivalent detections per day; *_raw = clean detections per satellite (not harmonized)`),
     q(`# median/p25/p75 = same calendar day across reference years ${ref?.[0]}-${ref?.[1]}${ref?.[0] <= 2002 ? ' (includes lower-confidence Terra-only years)' : ''} excluding the day's own year${skipT ? ' and terra_only days' : ''}; smoothing ${win > 1 ? win + '-day centred mean' : 'none'}`),
     q('# Empty cell = no satellite coverage that day (unknown, not zero)'),
-    q('# regime = which satellites the harmonized value rests on: viirs / modis_ta (Terra+Aqua) / terra_only (lower confidence) / none'),
+    q('# code: https://github.com/tw-Zent/india-fire-calendar'),
+    q('# ai_assistance: Built with AI assistance (Claude, Anthropic), directed and reviewed by Ashish Das.'),
+    q('# regime = which satellites the harmonized value rests on: viirs_snpp (S-NPP observed directly) / viirs_noaa20_filled (NOAA-20 converted, S-NPP missing) / modis_ta (Terra+Aqua) / terra_only (lower confidence) / none'),
     ...legendLines().map((l) => q(`# accuracy: ${l}`)),
   ];
   const head = ['date', 'harmonized', ...SENSORS.map((s) => SENSOR_LABELS[s].toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_raw'),
@@ -34,7 +36,7 @@ export function downloadCSV({ meta, agg, sel, from, to, cmp, ref, win, skipT, fi
   const a = idxOf(meta, from), b = idxOf(meta, to);
   for (let di = a; di <= b; di++) {
     const k = di - a;
-    lines.push([isoOf(meta, di), cell(agg.h[di]), ...SENSORS.map((s) => cell(agg.raw[s][di])), meta.hasRegime ? meta.regimeNames[meta.regime[di]] ?? '' : '',
+    lines.push([isoOf(meta, di), cell(agg.h[di]), ...SENSORS.map((s) => cell(agg.raw[s][di])), meta.hasRegime ? ({ viirs_snpp: 'viirs_snpp', viirs_n20: 'viirs_noaa20_filled', modis_ta: 'modis_ta', terra_only: 'terra_only', none: 'none' })[dayClass(meta, di)] : '',
       cell(cmp?.median[k]), cell(cmp?.p25[k]), cell(cmp?.p75[k]), cell(cmp?.diff[k]), cell(cmp?.pct[k])].join(','));
   }
   save(new Blob(['\ufeff' + lines.join('\r\n') + '\r\n'], { type: 'text/csv' }), `${fileBase || 'fire-calendar_' + from + '_' + to}_daily.csv`);

@@ -1,6 +1,9 @@
 // Minimal Markdown → HTML for METHODS.md (headings, paragraphs, lists, tables, bold/italic/code). Input is our own file; still escaped.
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|\W)\*(\S.*?)\*(?=\W|$)/g, '$1<em>$2</em>').replace(/`(.+?)`/g, '<code>$1</code>');
+// Links: http(s) URLs open in a new tab; METHODS.md / README_DATA.md map to the app's own pages; other relative links become plain text.
+const link = (t, u) => (/^https?:\/\//.test(u) ? `<a href="${u}" target="_blank" rel="noopener">${t}</a>`
+  : /METHODS\.md$/.test(u) ? `<a href="#about">${t}</a>` : /README_DATA\.md$/.test(u) ? `<a href="#data-readme">${t}</a>` : t);
+const inline = (s) => esc(s).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => link(t, u)).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|\W)\*(\S.*?)\*(?=\W|$)/g, '$1<em>$2</em>').replace(/`(.+?)`/g, '<code>$1</code>').replace(/(^|[\s(])(https?:\/\/[^\s<)]+[^\s<).,;])/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
 export function mdToHtml(md) {
   const lines = md.replace(/\r/g, '').split('\n');
   const out = [];

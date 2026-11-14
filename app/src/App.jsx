@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import MapPanel from './MapPanel.jsx';
 import Calendar from './Calendar.jsx';
-import { LineChart, AnomalyChart } from './Charts.jsx';
+import { LineChart, AnomalyChart, SensorYearsChart } from './Charts.jsx';
 import { aggregate, cellStats, domainOverlay, idxOf, isoOf, loadMeta, SENSORS, SENSOR_LABELS } from './data.js';
 import { buildRaster, DIV, DIV_LABELS, MIN_TYPICAL, pctOf } from './mapLayer.js';
 import { RAMP } from './Calendar.jsx';
@@ -32,6 +32,8 @@ export function presetDates(p, meta) {
   if (end < f) return { from: `${Y - 1}-${p.season[0]}`, to: `${Y - 1}-${p.season[1]}`, soFar: false };
   return { from: f, to: t, soFar: false };
 }
+export const CODE_URL = 'https://github.com/tw-Zent/india-fire-calendar';
+export const AI_NOTE = 'Built with AI assistance (Claude, Anthropic), directed and reviewed by Ashish Das.';
 const REF_DEFAULT_FROM = 2003; // HQ D17 with h v1.2: Terra+Aqua validates well from 2003. Terra-only 2000–2002 never in the default.
 const TAB_IDS = ['calendar', 'history', 'unusual', 'critical', 'sensors', 'download'];
 
@@ -97,12 +99,14 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [ms, setMs] = useState(null);
   const [tab, setTab] = useState(URL0.tab || 'calendar');
-  const [page, setPage] = useState(location.hash === '#about' ? 'about' : 'app');
+  const pageOf = () => (location.hash === '#about' ? 'about' : location.hash === '#data-readme' ? 'data' : 'app');
+  const [page, setPage] = useState(pageOf());
   const [ref, setRef] = useState(null); // [fromYear, toYear]
   const [win, setWin] = useState(URL0.win || 1);
   const [skipT, setSkipT] = useState(URL0.skipT ?? true);
   const [mapMode, setMapMode] = useState(URL0.map || 'total'); // total | anomaly | off
   const [density, setDensity] = useState(null);
+  const [sensLog, setSensLog] = useState(false);
   const [anomMode, setAnomMode] = useState('diff');
   const [showRaw, setShowRaw] = useState(false);
   const calRef = useRef(null), lineRef = useRef(null), anomRef = useRef(null);
@@ -112,7 +116,7 @@ export default function App() {
     if (!URL0.from && !URL0.to) { const s0 = URL0.sel || PRESETS[0]; if (s0.id) { const d = presetDates(s0, m); setFrom(d.from); setTo(d.to); } }
   }).catch((e) => setErr(e.message)); }, []);
   useEffect(() => {
-    const h = () => setPage(location.hash === '#about' ? 'about' : 'app');
+    const h = () => { setPage(pageOf()); window.scrollTo(0, 0); };
     window.addEventListener('hashchange', h);
     return () => window.removeEventListener('hashchange', h);
   }, []);
@@ -140,9 +144,10 @@ export default function App() {
     return t;
   }, [agg, meta, from, clampTo, rangeOk]);
 
+  const viewYear = +from.slice(0, 4);
   const cmp = useMemo(() => (agg && rangeOk && ref ? compare(meta, agg.h, from, clampTo, ref[0], ref[1], win, skipT) : null),
     [agg, meta, from, clampTo, rangeOk, ref, win, skipT]);
-  const crit = useMemo(() => (agg && ref ? criticalPeriods(meta, agg.h, ref[0], ref[1], skipT) : null), [agg, meta, ref, skipT]);
+  const crit = useMemo(() => (agg && ref ? criticalPeriods(meta, agg.h, ref[0], ref[1], skipT, viewYear) : null), [agg, meta, ref, skipT, viewYear]);
   useEffect(() => { if (meta && ref) writeUrl({ sel, from, to, tab, ref, win, skipT, mapMode }); }, [meta, sel, from, to, tab, ref, win, skipT, mapMode]);
   const spanDays = meta && rangeOk ? idxOf(meta, clampTo) - idxOf(meta, from) + 1 : 0;
   const anomalyOk = spanDays > 0 && spanDays <= 366;
@@ -195,7 +200,7 @@ export default function App() {
       base: `${slug}_${from}_${clampTo}`,
       title: [`${viewName}: ${sel?.name || 'Selected area'}`, `${from} → ${clampTo}${soFar} · total ${fmt(w.total)} harmonized detections${cmpTxt ? ` (${cmpTxt})` : ''}`],
       footer: [`Reference years ${ref[0]}–${ref[1]} · data v${meta.rawVersion} (${meta.h_status || ''}) · harmonized = S-NPP-VIIRS-equivalent detections`,
-        'NASA FIRMS MODIS/VIIRS · nasa-space-app-2026.web.app'],
+        'NASA FIRMS MODIS/VIIRS · nasa-space-app-2026.web.app · AI-assisted (Claude, Anthropic), reviewed by Ashish Das'],
     };
   };
   const copyLink = () => {
@@ -203,7 +208,39 @@ export default function App() {
     try { navigator.clipboard.writeText(location.href).then(done, () => window.prompt('Copy this link:', location.href)); }
     catch { window.prompt('Copy this link:', location.href); }
   };
-  const viewYear = +from.slice(0, 4);
+  // Per-year totals of the selected window (same calendar days each year), harmonized + raw per satellite.
+  const sensorRows = useMemo(() => {
+    if (!agg || !rangeOk) return [];
+    const a = idxOf(meta, from), b = idxOf(meta, clampTo), L = b - a + 1;
+    const rows = [];
+    const sumRange = (s0, e0) => {
+      const r = { h: 0, t: 0, a: 0, s: 0, n: 0 }; const cov = { h: 0, t: 0, a: 0, s: 0, n: 0 }; let days = 0;
+      for (let di = Math.max(0, s0); di <= Math.min(meta.n_days - 1, e0); di++) {
+        days++;
+        if (!Number.isNaN(agg.h[di])) { r.h += agg.h[di]; cov.h++; }
+        for (const k of SENSORS) if (!Number.isNaN(agg.raw[k][di])) { r[k] += agg.raw[k][di]; cov[k]++; }
+      }
+      // a satellite that covered under half the days of the window (not yet flying / ended) gets no value
+      for (const k of ['h', ...SENSORS]) if (cov[k] < 0.5 * days) r[k] = null;
+      r.cov = cov; r.days = days; // satellites missing some days get a hollow "partial year" marker (stakeholder-02 N4)
+      return r;
+    };
+    if (L <= 366) {
+      const { y0, y1 } = yearsOf(meta);
+      for (let y = y0; y <= y1; y++) {
+        const s0 = idxOf(meta, `${y}${from.slice(4)}`);
+        if (s0 < 0 || s0 + L - 1 >= meta.n_days) continue;
+        rows.push({ year: y, ...sumRange(s0, s0 + L - 1) });
+      }
+    } else {
+      for (let y = +from.slice(0, 4); y <= +clampTo.slice(0, 4); y++) {
+        const s0 = Math.max(a, idxOf(meta, `${y}-01-01`)), e0 = Math.min(b, idxOf(meta, `${y}-12-31`));
+        rows.push({ year: y, partial: s0 > idxOf(meta, `${y}-01-01`) || e0 < idxOf(meta, `${y}-12-31`), ...sumRange(s0, e0) });
+      }
+    }
+    return rows;
+  }, [agg, meta, from, clampTo, rangeOk]);
+  const disagree = useMemo(() => sensorDisagreement(sensorRows), [sensorRows]);
   const rangeSrc = useMemo(() => (meta && rangeOk ? regimeText(regimeOf(meta, idxOf(meta, from), idxOf(meta, clampTo))) : ''), [meta, rangeOk, from, clampTo]);
   const overlay = useMemo(() => (meta ? domainOverlay(meta) : null), [meta]);
   const refText = ref ? `Reference years ${ref[0]}–${ref[1]}${ref[0] <= 2002 ? ' (includes lower-confidence years)' : ''}, each day's own year left out${skipT && meta?.hasRegime ? ', Terra-only days left out' : ''}` : '';
@@ -213,6 +250,7 @@ export default function App() {
   const yearOpts = yrs ? Array.from({ length: yrs.y1 - yrs.y0 + 1 }, (_, i) => yrs.y0 + i) : [];
 
   if (page === 'about') return <About meta={meta} />;
+  if (page === 'data') return <DataReadme />;
 
   return (
     <div className="app">
@@ -220,7 +258,7 @@ export default function App() {
         <h1>India Fire Calendar</h1>
         <p className="sub">Harmonized NASA MODIS + VIIRS active-fire hotspots, 2000–2026 · <a href="#about">Methods &amp; data</a></p>
         {meta?.h_status?.startsWith('provisional') && <p className="mock">Provisional harmonization (constant-ratio baseline).</p>}
-        {meta?.h_status?.startsWith('final') && <p className="okline"><a href="#about">Harmonized record v{meta.rawVersion.split('.').slice(0, 2).join('.')}: validated on held-out years; accuracy shown per year (see Methods)</a></p>}
+        {meta?.h_status?.startsWith('final') && <p className="okline"><a href="#about">Harmonized record v{meta.rawVersion}: validated on held-out years; accuracy shown per year (see Methods)</a></p>}
       </header>
       {err && <p className="err">Error: {err}</p>}
       <section className="controls">
@@ -240,14 +278,15 @@ export default function App() {
       <MapLegend mode={mapMode} setMode={setMapMode} density={density} anomalyOk={anomalyOk} from={from} to={clampTo} />
       <section className="summary" aria-live="polite">
         <strong>{sel?.name || 'No area'}</strong>
+        {sel && !sel.id && (() => { const b = agg?.bbox; return b ? <span className="coords"> ({b.s.toFixed(2)}–{b.n.toFixed(2)}° N, {b.w.toFixed(2)}–{b.e.toFixed(2)}° E{sel.type === 'poly' ? ', bounding box of the polygon' : ''})</span> : null; })()}
         {busy && <span> · computing…</span>}
         {totals && !busy && (
           <span> · {from} → {clampTo}{sel?.season && clampTo === meta.end && from.slice(5) === sel.season[0] && to <= meta.end && <b className="sofar"> · season so far (data through {nice(meta.end.slice(5))} {meta.end.slice(0, 4)})</b>} · <b>{fmt(totals.h)}</b> harmonized detections<span className="xtra"> · {agg.nCells.toLocaleString('en-US')} of {agg.nSel.toLocaleString('en-US')} cells (0.1°) have data</span>
-            {totals.noCov > 0 && <> · {totals.noCov} days without coverage</>}<span className="xtra"> · {ms} ms</span>
+            {totals.noCov > 0 && <> · {totals.noCov} days without coverage</>}
             {meta.h_status?.startsWith('provisional') && <span className="prov"> · provisional harmonization</span>}</span>
         )}
       </section>
-      <div className="sharebar"><button className="small" onClick={copyLink}>{copied ? '✓ Link copied' : 'Copy link to this view'}</button></div>
+      <div className="sharebar top"><button className="small" onClick={copyLink}>{copied ? '✓ Link copied' : 'Copy link to this view'}</button></div>
       {agg && agg.nCells === 0 && !busy && <p className="err">No data here: this area is outside the data domain (shaded grey on the map). Select an area inside India.</p>}
       <details className="howto">
         <summary>How to read this</summary>
@@ -310,6 +349,7 @@ export default function App() {
                 </div>
                 <AnomalyChart meta={meta} cmp={cmp} mode={anomMode} svgRef={anomRef} />
                 <AnomSummary cmp={cmp} meta={meta} h={agg.h} from={from} to={clampTo} refY={ref} skipT={skipT && meta.hasRegime} ph={sel?.id === 'ph'} />
+                <DisagreeLine d={disagree} />
               </>
             )}
             {tab === 'critical' && crit && <><p className="refline">Typical season from reference years {ref[0]}–{ref[1]}{ref[0] <= 2002 ? ' (includes lower-confidence years)' : ''}.</p><NowNext meta={meta} h={agg.h} crit={crit} refY={ref} skipT={skipT && meta.hasRegime} /><Critical crit={crit} viewYear={viewYear} meta={meta} /></>}
@@ -323,6 +363,11 @@ export default function App() {
                     {SENSORS.map((s) => <tr key={s}><td>{SENSOR_LABELS[s]} (raw)</td><td>{fmt(totals.raw[s])}</td></tr>)}
                   </tbody>
                 </table>
+                <h3 className="sub3">Per year, same days ({from.slice(5)} → {clampTo.slice(5)}{idxOf(meta, clampTo) - idxOf(meta, from) >= 366 ? ', calendar years' : ''})</h3>
+                <div className="seg"><button className={!sensLog ? 'on' : ''} aria-pressed={!sensLog} onClick={() => setSensLog(false)}>Linear</button><button className={sensLog ? 'on' : ''} aria-pressed={sensLog} onClick={() => setSensLog(true)}>Log scale</button></div>
+                <SensorYearsChart rows={sensorRows} log={sensLog} />
+                <DisagreeLine d={disagree} />
+                <p className="srcline"><b>If all satellites fall together, the change is in the fires, not in one sensor.</b> Raw counts differ in level because the satellites see fires differently; compare their shapes, not their heights. A satellite that covered under half of the window's days in a year (not yet launched or already retired) is left out for that year.</p>
                 <p className="note">Data version {meta.version}.</p>
               </>
             )}
@@ -337,7 +382,8 @@ export default function App() {
           </>
         )}
       </section>
-      <footer>Data: NASA FIRMS (MODIS C6.1; VIIRS S-NPP and NOAA-20 C2). Data version {meta?.version || '…'}. Map © OpenStreetMap contributors.</footer>
+      <div className="sharebar bottom"><button className="small" onClick={copyLink}>{copied ? '✓ Link copied' : 'Copy link to this view'}</button></div>
+      <footer>Data: NASA FIRMS (MODIS C6.1; VIIRS S-NPP and NOAA-20 C2). Data version {meta?.version || '…'}. Map © OpenStreetMap contributors. Code: <a href={CODE_URL} target="_blank" rel="noopener">{CODE_URL.replace('https://', '')}</a>. {AI_NOTE}</footer>
     </div>
   );
 }
@@ -357,6 +403,30 @@ function ChartDl({ meta, cmp, raw, win, stampFor }) {
         <AnomalyChart meta={meta} cmp={cmp} mode="diff" svgRef={a} />
       </div>
     </>
+  );
+}
+
+// Sensor disagreement (stakeholder-02 N1, HQ D47): compare the last two years of the selected window. If MODIS Aqua and
+// VIIRS (NOAA-20 if it fully covered both years, else S-NPP) changed in opposite directions, or by > 30 points apart,
+// return a warning. Computed from the data, nothing hard-coded. Needs ≥ 20 detections in the earlier year for each.
+export function sensorDisagreement(rows) {
+  const ok = rows.filter((r) => r.h != null);
+  if (ok.length < 2) return null;
+  const [p, c] = ok.slice(-2);
+  const full = (r, k) => r[k] != null && r.cov && r.cov[k] === r.days;
+  const vk = full(p, 'n') && full(c, 'n') ? 'n' : full(p, 's') && full(c, 's') ? 's' : p.n != null && c.n != null ? 'n' : null;
+  if (!vk || p.a == null || c.a == null || p.a < 20 || p[vk] < 20) return null;
+  const pa = (100 * (c.a - p.a)) / p.a, pv = (100 * (c[vk] - p[vk])) / p[vk];
+  const opposite = (pa > 5 && pv < -5) || (pa < -5 && pv > 5);
+  if (!opposite && Math.abs(pa - pv) <= 30) return null;
+  return { y0: p.year, y1: c.year, aqua: Math.round(pa), viirs: Math.round(pv), vName: vk === 'n' ? 'VIIRS NOAA-20' : 'VIIRS S-NPP' };
+}
+function DisagreeLine({ d }) {
+  if (!d) return null;
+  const sg = (x) => `${x >= 0 ? '+' : ''}${x} %`;
+  return (
+    <p className="caveat strong" role="note"><b>Sensors disagree this year:</b> MODIS Aqua {sg(d.aqua)} vs {d.vName} {sg(d.viirs)} in {d.y1} compared with {d.y0}, same days. Treat the change as uncertain (see <a href="#about">Methods</a>: overpass times).{' '}
+      {d.y1 >= 2023 && <>Aqua's afternoon pass has drifted from ~13:15 to ~15:30 local time since 2022, so it now sees fires lit after the ~13:30 VIIRS pass. This is consistent with burning shifting later in the day (not proof). <a href="#about">Methods → Limits</a>.</>}</p>
   );
 }
 
@@ -419,8 +489,9 @@ function MapLegend({ mode, setMode, density, anomalyOk, from, to }) {
       {density && eff === 'anomaly' && (
         <div className="lg lgdiv">
           {DIV.colors.map((c, i) => <span key={c} className="bin"><span className="swd" style={{ background: c }} /><span className="bl">{DIV_LABELS[i]}</span></span>)}
-          <span className="bin"><span className="swd" style={{ background: 'rgba(150,150,150,.6)' }} /><span className="bl">too few to compare</span></span>
-          <span className="lgtxt">% vs typical (median of {density.nRef} reference years' own totals for the same days). Blue: below typical; orange: above. Grey: typical under {MIN_TYPICAL} detections in the cell.</span>
+          <span className="bin"><span className="swd" style={{ background: '#f8f8f8', border: '1px solid #999' }} /><span className="bl">too few to compare</span></span>
+          <span className="bin"><span className="swd" style={{ background: 'rgba(90,90,90,.45)' }} /><span className="bl">no data</span></span>
+          <span className="lgtxt">% vs typical (median of {density.nRef} reference years' own totals for the same days). Blue: below typical; orange: above. White: too few fires to compare (typical under {MIN_TYPICAL} detections in the cell). Dark grey: no data (outside the data area).</span>
         </div>
       )}
       {mode !== 'off' && <p className="note">Tap a cell on the map for its numbers. Grey outside the coloured area means no data.</p>}
@@ -464,6 +535,17 @@ function NowNext({ meta, h, crit, refY: ref, skipT }) {
     const toPeak = inDays + ((main.k - main.s + 365) % 365);
     season = <>Next <b>main critical period</b>: starts around <b>{nice(main.start)}</b> (in {inDays} days), peaks around <b>{nice(main.peak)}</b> (in {toPeak} days).</>;
   }
+  // This year's main-season peak so far, with its shift vs the typical peak (HQ webapp-10 item 3); end date unchanged.
+  let thisPeak = null;
+  if (main && doy >= main.s) {
+    const ye = main.years.find((r) => r.year === ey);
+    if (ye && ye.peak) {
+      const shiftTxt = ye.shift == null ? '' : Math.abs(ye.shift) <= 5 ? 'about on time' : ye.shift > 0 ? `${ye.shift} d late` : `${-ye.shift} d early`;
+      thisPeak = ye.partial
+        ? <>This year's peak so far: <b>{nice(ye.peak.slice(5))}</b>{shiftTxt && <> ({shiftTxt})</>}{ye.shift > 5 ? ' — a late season may run past its typical end.' : '.'}</>
+        : <>This year's main season peaked on {nice(ye.peak.slice(5))}{shiftTxt && <> ({shiftTxt})</>}.</>;
+    }
+  }
   const others = ps.filter((p) => p !== main);
   const otherInside = others.find((p) => doy >= p.s && doy <= p.e);
   const otherNext = others.length ? [...others].sort((x, y) => daysUntil(x.s) - daysUntil(y.s))[0] : null;
@@ -478,7 +560,7 @@ function NowNext({ meta, h, crit, refY: ref, skipT }) {
         {pct != null && <> ({pctTxt(pct)})</>}: <b className={pct != null && pct >= 25 ? 'up' : pct != null && pct <= -25 ? 'down' : ''}>{verdictTxt}</b>.
         {w.l5 && <> Vs last 5 complete years ({yrsTxt(w.l5.years)}): {fmt(w.l5.median)} ({pctTxt(w.l5.pct)}).</>}
         {curDays < W && <> {W - curDays} days had no coverage.</>}</p>
-      <p>{season}</p>
+      <p>{season}{thisPeak && <> {thisPeak}</>}</p>
       {secondary && <p className="note">{secondary}</p>}
       <p className="note">Typical = median, over reference years, of each year's own total for the same calendar days. Critical periods: recurring seasons, each running while typical burning stays at or above 25 % of its own peak.</p>
     </div>
@@ -496,27 +578,35 @@ function AccLegend() {
 }
 
 function Critical({ crit, viewYear, meta }) {
+  const [pick, setPick] = useState({}); // season index → year tapped (row readout, used on phones where the source column is hidden)
   const srcOf = (p, y) => {
     const a = idxOf(meta, `${y}-${p.start}`), b = idxOf(meta, `${y}-${p.end}`);
     return regimeOf(meta, a, b);
   };
   if (!crit.periods.length) return <p className="note">No recurring fire season was found for this area.</p>;
+  // Main season (largest typical total) first; the others follow under "Other seasons" (HQ webapp-10 m).
+  const mainIdx = crit.periods.reduce((bi, p, i, arr) => ((p.typicalTotal || 0) > (arr[bi].typicalTotal || 0) ? i : bi), 0);
+  const order = [mainIdx, ...crit.periods.map((_, i) => i).filter((i) => i !== mainIdx)];
   return (
     <>
-      <p className="note">Critical periods: the recurring fire seasons in this area. Each season runs while typical burning (multi-year median of the reference years, 15-day smoothed) stays at or above 25 % of that season's own peak. For each year: the peak date (7-day mean), and the total compared with a typical season.</p>
-      {crit.periods.map((p, i) => {
+      <p className="note">Critical periods: the recurring fire seasons in this area. Each season runs while typical burning (multi-year median of the reference years, 15-day smoothed) stays at or above 25 % of that season's own peak. For each year: the peak date (7-day mean), and the season total compared with a typical season (median of the other reference years' own totals).</p>
+      {order.map((i, pos) => {
+        const p = crit.periods[i];
         const vy = p.years.find((y) => y.year === viewYear);
+        const picked = p.years.find((y) => y.year === pick[i]);
         return (
           <div key={i} className="crit">
-            <h3>Season {i + 1}: {p.start} → {p.end}, typical peak {p.peak}{crit.periods.length > 1 && p.typicalTotal === Math.max(...crit.periods.map((q) => q.typicalTotal)) ? ' · main season' : ''}</h3>
-            {vy && <p><b>{viewYear}</b> · {regimeText(srcOf(p, viewYear))}: peak {vy.peak?.slice(5) || '—'} · total {fmt(vy.total)} ({Math.round(vy.pctOfTypical)} % of typical) · <b>{verdict(vy)}</b>{vy.partial && ' · season not complete in record'}</p>}
+            {pos === 1 && <h3 className="others">Other seasons</h3>}
+            <h3>{pos === 0 ? (crit.periods.length > 1 ? 'Main season' : 'Season') : `Season ${pos + 1}`}: {nice(p.start)} → {nice(p.end)}, typical peak ~{nice(p.peak)}{p.peakLo && p.peakHi && p.peakLo !== p.peakHi ? ` (most years ${nice(p.peakLo)} – ${nice(p.peakHi)})` : ''}</h3>
+            {vy && <p><b>{viewYear}</b> · {regimeText(srcOf(p, viewYear))}: peak {vy.peak ? nice(vy.peak.slice(5)) : '—'} · total {fmt(vy.total)} ({Number.isNaN(vy.pctOfTypical) ? '—' : Math.round(vy.pctOfTypical)} % of typical{vy.partial ? ' so far' : ''}) · <b>{verdict(vy)}</b>{vy.partial && ' · season not complete in record'}</p>}
             <div className="tablewrap">
-              <table className="sens">
-                <thead><tr><th>Year</th><th>Peak</th><th>vs typical</th><th>Total</th><th>% typical</th><th>Verdict</th><th>Data source</th></tr></thead>
+              <table className="sens crit-t">
+                <thead><tr><th>Year</th><th>Peak</th><th>vs typical</th><th>Total</th><th>% typical</th><th>Verdict</th><th className="src">Data source</th></tr></thead>
                 <tbody>
                   {p.years.map((y) => (
-                    <tr key={y.year} className={y.year === viewYear ? 'hl' : ''}>
-                      <td>{y.year}{y.partial ? '*' : ''}{lowConf(y.year) ? ' †' : ''}</td><td>{y.peak?.slice(5) || '—'}</td>
+                    <tr key={y.year} className={(y.year === viewYear ? 'hl ' : '') + (pick[i] === y.year ? 'picked' : '')} title={`${y.year}: ${regimeText(srcOf(p, y.year))}`}
+                      tabIndex={0} onClick={() => setPick({ ...pick, [i]: y.year })} onKeyDown={(e) => { if (e.key === 'Enter') setPick({ ...pick, [i]: y.year }); }}>
+                      <td>{y.year}{y.partial ? '*' : ''}{lowConf(y.year) ? ' †' : ''}</td><td>{y.peak ? y.peak.slice(5) : '—'}</td>
                       <td>{y.shift == null ? '—' : y.shift === 0 ? '0 d' : `${y.shift > 0 ? '+' : ''}${y.shift} d`}</td>
                       <td>{fmt(y.total)}</td><td>{Number.isNaN(y.pctOfTypical) ? '—' : Math.round(y.pctOfTypical)}</td><td className="v">{verdict(y)}</td><td className="v src">{regimeText(srcOf(p, y.year))}</td>
                     </tr>
@@ -524,12 +614,33 @@ function Critical({ crit, viewYear, meta }) {
                 </tbody>
               </table>
             </div>
+            <p className="readout" aria-live="polite">{picked ? <><b>{picked.year}</b> · peak {picked.peak ? nice(picked.peak.slice(5)) : '—'} · total {fmt(picked.total)} vs typical {fmt(picked.typical)} · {verdict(picked)} · <i>{regimeText(srcOf(p, picked.year))}</i></> : 'Tap a row to read its data source and numbers here.'}</p>
             <AccLegend />
             <p className="note">† lower confidence (Terra-only years, before Aqua joined in July 2002; harmonized from MODIS ratios). * season not fully inside the record. Negative = earlier than typical. Days without coverage are left out of totals. Seasons that span New Year appear as two parts.</p>
           </div>
         );
       })}
     </>
+  );
+}
+
+// Puts the Aqua overpass-drift figure under the Aqua bullet in Methods → Limits (HQ webapp-12 item 3).
+function withAquaFigure(html) {
+  const fig = '<figure class="mdfig"><img src="data/fig_aqua_drift.png" alt="Detection time of day by satellite, Punjab and Haryana box, 1 Oct to 13 Nov, 2018 to 2026: MODIS Aqua moves from about 13:15 to 15:30 local solar time while both VIIRS satellites stay near 13:10." loading="lazy" onerror="this.parentNode.style.display=\'none\'"/><figcaption>Since 2022 MODIS Aqua\'s detections in Punjab &amp; Haryana moved from ~13:15 to ~15:30 local solar time while VIIRS stayed at ~13:10, and Aqua now sees more fires than VIIRS. That\'s consistent with burning shifting later in the afternoon (not proof).</figcaption></figure>';
+  const re = /(<li><em>Aqua(?:'|&#39;|’)s overpass has drifted later[\s\S]*?)<\/li>/;
+  return re.test(html) ? html.replace(re, `$1${fig}</li>`) : html;
+}
+
+function DataReadme() {
+  const [html, setHtml] = useState(null);
+  useEffect(() => {
+    fetch('data/README_DATA.md').then((r) => (r.ok ? r.text() : null)).then((t) => setHtml(t ? mdToHtml(t) : '')).catch(() => setHtml(''));
+  }, []);
+  return (
+    <div className="app about">
+      <p><a href="#">← Back to the calendar</a> · <a href="#about">Methods</a></p>
+      {html === null ? <p>Loading…</p> : html ? <div className="md" dangerouslySetInnerHTML={{ __html: html }} /> : <p className="slot">README_DATA.md not found in this build.</p>}
+    </div>
   );
 }
 
@@ -542,8 +653,8 @@ function About({ meta }) {
     <div className="app about">
       <p><a href="#">← Back to the calendar</a></p>
       <h1>Methods &amp; data</h1>
-      <p className="note">Data version {meta?.version || '…'}. The section below comes straight from the data team's methods notes (data/processed/METHODS.md).</p>
-      {html === null ? <p>Loading…</p> : html ? <div className="md" dangerouslySetInnerHTML={{ __html: html }} /> : <p className="slot">Methods notes not found in this build.</p>}
+      <p className="note">Data version {meta?.version || '…'}. The section below comes straight from the data team's methods notes (data/processed/METHODS.md). For the data files, their format and how to cite them, see <a href="#data-readme">About the data files (README_DATA)</a>.</p>
+      {html === null ? <p>Loading…</p> : html ? <div className="md" dangerouslySetInnerHTML={{ __html: withAquaFigure(html) }} /> : <p className="slot">Methods notes not found in this build.</p>}
       {meta?.h_method && (
         <>
           <h2>Harmonized value in this version</h2>
@@ -567,6 +678,8 @@ function About({ meta }) {
       </ul>
       <h2>Credits</h2>
       <p>We acknowledge the use of data and imagery from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Science Data and Information System (ESDIS). Base map © OpenStreetMap contributors. Built for the NASA Space Apps Challenge 2026: "Harmonization of MODIS and VIIRS Hot Spots".</p>
+      <p><b>Code:</b> <a href={CODE_URL} target="_blank" rel="noopener">{CODE_URL}</a></p>
+      <p><b>AI assistance:</b> {AI_NOTE}</p>
     </div>
   );
 }

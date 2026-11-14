@@ -1,7 +1,7 @@
 {
  "contract": "FIRMS India harmonized daily active-fire grid",
- "version": "1.3.0",
- "status": "v1.3 \u2014 h values change on MODIS Terra+Aqua days only (hybrid day-shape; monthly totals unchanged). Layout unchanged.",
+ "version": "1.3.1",
+ "status": "v1.3.1 \u2014 patch: the hybrid model is now deterministic so a rerun reproduces the published h exactly. Layout unchanged.",
  "date_convention": {
   "day": "UTC calendar day = FIRMS acq_date",
   "encoding": "integer days since 1970-01-01 (UTC)",
@@ -168,5 +168,8 @@
    "type": "object",
    "desc": "tile_id -> sorted local cell indices (0..399) that are inside the domain"
   }
- }
+ },
+ "ai_assistance": "AI assistance: code, analysis and documentation were produced with Claude (Anthropic) as an AI assistant, directed and reviewed by Ashish Das.",
+ "code": "https://github.com/tw-Zent/india-fire-calendar",
+ "licence": "CC BY 4.0 (derived data); source: NASA FIRMS"
 }

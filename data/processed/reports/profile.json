@@ -151,9 +151,9 @@
   },
   "confidence": {
    "kind": "class",
-   "l": 884730,
    "n": 4091364,
-   "h": 133738
+   "h": 133738,
+   "l": 884730
   },
   "exact_dup_rows": 0,
   "missing_days": 6,
@@ -199,9 +199,9 @@
   },
   "confidence": {
    "kind": "class",
-   "n": 47344,
+   "h": 435,
    "l": 6075,
-   "h": 435
+   "n": 47344
   },
   "exact_dup_rows": 0,
   "missing_days": 0,
@@ -244,9 +244,9 @@
   },
   "confidence": {
    "kind": "class",
-   "l": 1513266,
    "n": 6957355,
-   "h": 256192
+   "h": 256192,
+   "l": 1513266
   },
   "exact_dup_rows": 0,
   "missing_days": 52,

@@ -97,7 +97,7 @@ export function AnomalyChart({ meta, cmp, mode, svgRef }) {
   const lim = niceMax(mx);
   const noCov = []; for (let k = 0; k < n; k++) if (Number.isNaN(cmp.value[k])) noCov.push(k);
   return (
-    <Frame meta={meta} a={cmp.a} n={n} ymin={-lim} ymax={lim} ylabel={mode === 'pct' ? '% vs median' : 'difference vs median'} svgRef={svgRef} title="Anomaly chart" noCov={noCov}>
+    <Frame meta={meta} a={cmp.a} n={n} ymin={-lim} ymax={lim} ylabel={mode === 'pct' ? '% vs median' : 'difference vs median (detections/day)'} svgRef={svgRef} title="Anomaly chart" noCov={noCov}>
       {({ x, y, bw }) => (
         <g>
           {Array.from(arr, (v, k) => {
@@ -117,3 +117,58 @@ export function AnomalyChart({ meta, cmp, mode, svgRef }) {
 }
 
 export function useHover() { return useState(null); }
+
+// Per-year totals of the selected window: harmonized + raw per satellite (stakeholder-01 #7 / HQ j).
+const SY_COLORS = { h: '#000000', t: '#E69F00', a: '#CC79A7', s: '#009E73', n: '#0072B2' };
+export function SensorYearsChart({ rows, log, svgRef }) {
+  const W2 = 720, H2 = 300, L2 = 56, R2 = 120, T2 = 14, B2 = 30;
+  const keys = ['h', 't', 'a', 's', 'n'];
+  const labels = { h: 'Harmonized', t: 'MODIS Terra (raw)', a: 'MODIS Aqua (raw)', s: 'VIIRS S-NPP (raw)', n: 'VIIRS NOAA-20 (raw)' };
+  if (!rows.length) return <p className="note">No complete windows to compare.</p>;
+  let mx = 0, mn = Infinity;
+  for (const r of rows) for (const k of keys) { const v = r[k]; if (v != null && v > 0) { mx = Math.max(mx, v); mn = Math.min(mn, v); } }
+  if (!(mx > 0)) return <p className="note">No detections in this window in any year.</p>;
+  const y0 = rows[0].year, y1 = rows[rows.length - 1].year;
+  const x = (yr) => L2 + ((W2 - L2 - R2) * (yr - y0)) / Math.max(1, y1 - y0);
+  const lo = log ? Math.pow(10, Math.floor(Math.log10(Math.max(mn, 1)))) : 0;
+  const hi = log ? Math.pow(10, Math.ceil(Math.log10(mx))) : niceMax(mx);
+  const y = (v) => {
+    const f = log ? (Math.log10(Math.max(v, lo)) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)) : v / hi;
+    return T2 + (H2 - T2 - B2) * (1 - f);
+  };
+  const ticks = log ? Array.from({ length: Math.round(Math.log10(hi / lo)) + 1 }, (_, i) => lo * Math.pow(10, i)) : [0, 0.25, 0.5, 0.75, 1].map((f) => f * hi);
+  const pathOf = (k) => {
+    let d = '', pen = false;
+    for (const r of rows) {
+      const v = r[k];
+      if (v == null || (log && !(v > 0))) { pen = false; continue; }
+      d += `${pen ? 'L' : 'M'}${x(r.year).toFixed(1)},${y(v).toFixed(1)}`; pen = true;
+    }
+    return d;
+  };
+  const step = Math.ceil((y1 - y0 + 1) / 13);
+  return (
+    <svg ref={svgRef} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${W2} ${H2}`} width="100%" role="img" aria-label="Per-year totals by satellite" fontFamily="system-ui, sans-serif">
+      <rect width={W2} height={H2} fill="#fff" />
+      {ticks.map((v, i) => <g key={i}><line x1={L2} x2={W2 - R2} y1={y(v)} y2={y(v)} stroke="#eee" /><text x={L2 - 4} y={y(v) + 3} fontSize="9" textAnchor="end" fill="#555">{fmt(v)}</text></g>)}
+      {rows.filter((r, i) => i % step === 0).map((r) => <text key={r.year} x={x(r.year)} y={H2 - B2 + 14} fontSize="9" textAnchor="middle" fill="#555">{r.year}</text>)}
+      <text x={12} y={T2 + (H2 - T2 - B2) / 2} fontSize="9" fill="#555" transform={`rotate(-90 12 ${T2 + (H2 - T2 - B2) / 2})`} textAnchor="middle">detections in window{log ? ' (log)' : ''}</text>
+      {keys.map((k) => <path key={k} d={pathOf(k)} fill="none" stroke={SY_COLORS[k]} strokeWidth={k === 'h' ? 2.4 : 1.5} strokeDasharray={k === 'h' ? '' : ''} />)}
+      {keys.map((k) => rows.map((r) => {
+        if (r[k] == null || (log && !(r[k] > 0))) return null;
+        // hollow "partial year" marker when the satellite missed over 10 % of the window's days (e.g. S-NPP after 2 Nov 2026);
+        // routine 1–4-day outages are not flagged, so the marker keeps its meaning.
+        const part = r.cov && r.cov[k] < 0.9 * r.days;
+        return (
+          <circle key={k + r.year} cx={x(r.year)} cy={y(r[k])} r={part ? 3.6 : k === 'h' ? 2.4 : 1.8} fill={part ? '#fff' : SY_COLORS[k]} stroke={SY_COLORS[k]} strokeWidth={part ? 1.6 : 0}>
+            <title>{`${r.year} · ${labels[k]}: ${Math.round(r[k]).toLocaleString('en-US')}${part ? ` · partial year (${r.cov[k]} of ${r.days} days)` : ''}${r.partial ? ' (part of the year in range)' : ''}`}</title>
+          </circle>
+        );
+      }))}
+      <g transform={`translate(${W2 - R2 + 8},${T2 + 4})`} fontSize="9">
+        {keys.map((k, i) => <g key={k}><rect y={i * 14} width="12" height="3" fill={SY_COLORS[k]} /><text x="16" y={i * 14 + 4}>{labels[k]}</text></g>)}
+        <g transform="translate(0,78)"><circle cx="6" cy="2" r="3.6" fill="#fff" stroke="#555" strokeWidth="1.6" /><text x="16" y="5">partial year (missed &gt; 10 % of days)</text></g>
+      </g>
+    </svg>
+  );
+}

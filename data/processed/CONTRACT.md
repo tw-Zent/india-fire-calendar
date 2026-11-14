@@ -1,6 +1,7 @@
-# Data contract v1.3.0 — FIRMS India harmonized daily fire grid
+# Data contract v1.3.1 — FIRMS India harmonized daily fire grid
 Owner: Pipeline. Machine-readable twin: `contract.json`. The app relies only on what is stated here.
-**Changes in v1.3.0 (14 Nov 15:40 IST):** only `h` values on MODIS Terra+Aqua days change (hybrid day-to-day shape; monthly and annual totals unchanged). Layout, fields and every other value unchanged. `manifest.h_status` = `final_v1.3`.
+**Changes in v1.3.1 (14 Nov 21:15 IST, patch):** the hybrid model is now deterministic (fixed seed, single thread, fixed row order), so `python pipeline/run_all.py` reproduces every exported file bit for bit. Daily `h` on MODIS Terra+Aqua days shifts slightly versus 1.3.0; monthly/annual totals and everything else are unchanged. Layout unchanged.
+**v1.3.0 (15:40 IST):** only `h` values on MODIS Terra+Aqua days change (hybrid day-to-day shape; monthly and annual totals unchanged). Layout, fields and every other value unchanged. `manifest.h_status` = `final_v1.3`.
 **v1.2.0 (14:10 IST):** `h` is now the FINAL harmonized value (method below); `coverage.json` adds `regimes` + per-day `regime`; S-NPP/NOAA-20 partial-outage days have their coverage bit cleared. Layout unchanged.
 **v1.1.0 (13:55 IST):** new file `domain.json` (cells outside the India data extent = no data). Nothing else changed.
 **Status:** layout + fields frozen. 

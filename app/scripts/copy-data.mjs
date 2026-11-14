@@ -30,8 +30,14 @@ fs.copyFileSync(path.join(src, 'coverage.json'), path.join(dst, 'coverage.json')
 // contract ≥1.1: domain.json (cells inside the data domain). Methods text: data/processed/METHODS.md.
 if (fs.existsSync(path.join(src, 'domain.json'))) fs.copyFileSync(path.join(src, 'domain.json'), path.join(dst, 'domain.json'));
 else console.warn('[copy-data] No domain.json (contract < 1.1): every cell will count.');
+if (fs.existsSync(path.join(proc, 'README_DATA.md'))) fs.copyFileSync(path.join(proc, 'README_DATA.md'), path.join(dst, 'README_DATA.md'));
 if (fs.existsSync(path.join(proc, 'METHODS.md'))) fs.copyFileSync(path.join(proc, 'METHODS.md'), path.join(dst, 'METHODS.md'));
 else console.warn('[copy-data] No data/processed/METHODS.md: Methods page will show a placeholder.');
+// Aqua overpass-drift figure for the Methods page (pipeline-09): prefer the submission-grade version
+for (const f of ['fig_aqua_drift.png', 'aqua_overpass_drift.png']) {
+  const p = path.join(proc, 'reports', f);
+  if (fs.existsSync(p)) { fs.copyFileSync(p, path.join(dst, 'fig_aqua_drift.png')); break; }
+}
 const unc = path.join(proc, 'reports', 'uncertainty.json');
 if (fs.existsSync(unc)) fs.copyFileSync(unc, path.join(dst, 'uncertainty.json'));
 let n = 0;

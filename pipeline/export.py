@@ -19,7 +19,7 @@ def save_ratios(F):
             parts.append(f["table"].with_columns(pl.lit(name).alias("fit"), pl.lit(f["model"]).alias("model")))
     pl.concat(parts, how="diagonal_relaxed").write_csv(REPORTS / "harmonization_ratios.csv")
 
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 TILE_DEG = 2
 CELLS_PER_TILE_SIDE = 20
 EPOCH = dt.date(1970, 1, 1)
@@ -105,7 +105,7 @@ def main():
                            ((pl.col("r") % CELLS_PER_TILE_SIDE) * CELLS_PER_TILE_SIDE + pl.col("q") % CELLS_PER_TILE_SIDE).alias("c")))
     keep = {t["tile"] for t in tiles}
     domj = {"version": VERSION, "rule": "cell had >=1 raw FIRMS detection (any sensor, 2000-11-01..date_last)", "tiles": {}}
-    for (la, lo), part in dom.sort("c").group_by(["lat0", "lon0"], maintain_order=True):
+    for (la, lo), part in dom.sort("lat0", "lon0", "c").group_by(["lat0", "lon0"], maintain_order=True):
         tid = f"{la}_{lo}"
         if args.sample and tid not in keep:
             continue

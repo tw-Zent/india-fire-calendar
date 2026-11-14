@@ -1,7 +1,11 @@
 # Pipeline — harmonized NASA FIRMS active-fire record for India (2000–2026)
 
 Turns the raw FIRMS hotspot CSVs (MODIS C6.1 Terra/Aqua, VIIRS 375 m S-NPP/NOAA-20) into one harmonized, validated, gridded daily record (0.1°, UTC days), exported as static JSON for the web app.
-Method and limits in plain words: [`data/processed/METHODS.md`](../data/processed/METHODS.md). Data contract (what the app reads): [`data/processed/CONTRACT.md`](../data/processed/CONTRACT.md) + `contract.json` (v1.3.0).
+Method and limits in plain words: [`data/processed/METHODS.md`](../data/processed/METHODS.md). Data contract (what the app reads): [`data/processed/CONTRACT.md`](../data/processed/CONTRACT.md) + `contract.json` (v1.3.1).
+
+Code: https://github.com/tw-Zent/india-fire-calendar · Licence for derived data: CC BY 4.0 (source data: NASA FIRMS).
+
+AI assistance: code, analysis and documentation were produced with Claude (Anthropic) as an AI assistant, directed and reviewed by Ashish Das.
 
 ## Setup
 Python ≥ 3.10.

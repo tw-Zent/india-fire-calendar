@@ -40,7 +40,10 @@ How it works: [METHODS.md](data/processed/METHODS.md) · Data format: [CONTRACT.
    To deploy your own copy, see [app/README.md](app/README.md).
 
 ## Data credit
-We acknowledge the use of data from NASA's Fire Information for Resource Management System (FIRMS) (https://firms.modaps.eosdis.nasa.gov), part of NASA's Earth Science Data and Information System (ESDIS). Base map © OpenStreetMap contributors.
+We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Land, Atmosphere Near real-time Capability for Earth observations (LANCE) (https://earthdata.nasa.gov/lance) and NASA's Earth Science Data and Information System (ESDIS). Base map © OpenStreetMap contributors.
+
+## AI assistance
+AI assistance: code, analysis and documentation were produced with Claude (Anthropic) as an AI assistant, directed and reviewed by Ashish Das.
 
 ## How to cite
 > Ashish (2026). *India Fire Calendar: harmonized MODIS + VIIRS active-fire record, 2000–2026.* NASA Space Apps Challenge 2026. https://nasa-space-app-2026.web.app

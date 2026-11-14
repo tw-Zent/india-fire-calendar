@@ -59,7 +59,7 @@ export function compare(meta, h, from, to, refFrom, refTo, win = 1, skipTerraOnl
 
 // Critical periods: from the multi-year median climatology (15-day smoothed), contiguous spans of the
 // calendar year where the typical daily value is ≥ 25 % of its annual peak. Then per-year peak date and total.
-export function criticalPeriods(meta, h, refFrom, refTo, skipTerraOnly = true) {
+export function criticalPeriods(meta, h, refFrom, refTo, skipTerraOnly = true, viewYear = null) {
   const { y0, y1 } = yearsOf(meta);
   const days = 365;
   const mdOf = (k) => new Date(Date.UTC(2001, 0, 1 + k)).toISOString().slice(5, 10); // non-leap template
@@ -140,17 +140,27 @@ export function criticalPeriods(meta, h, refFrom, refTo, skipTerraOnly = true) {
       for (let i = 0; i < ys.length; i++) if (ys[i] > best) { best = ys[i]; bestDi = sa + i; }
       if (!n) continue;
       const peakIso = bestDi >= 0 ? isoOf(meta, bestDi) : null;
-      const shift = peakIso ? Math.round((Date.parse(`2001-${md(peakIso)}`) - Date.parse(`2001-${mdOf(pk)}`)) / 86400000) : null;
+      const peakDoy = peakIso ? Math.round((Date.parse(`2001-${md(peakIso)}`) - Date.parse('2001-01-01')) / 86400000) : null;
       // usable as a reference year: complete, ≥ 90 % of days covered, and (by default) no Terra-only days
       const usable = !partial && n >= 0.9 * L && !(skipTerraOnly && terra > 0);
-      years.push({ year: y, total: tot, peak: peakIso, shift, gaps, partial, usable });
+      years.push({ year: y, total: tot, peak: peakIso, peakDoy, gaps, partial, usable });
     }
     // "Typical" season total = median over reference years of each year's OWN season total (HQ, stakeholder-01 #1),
     // leaving out the year being judged — not the sum of daily medians.
     const refTotals = (skipYear) => years.filter((r) => r.usable && inRef(r.year) && r.year !== skipYear).map((r) => r.total).sort((x, y) => x - y);
-    for (const r of years) { const t = refTotals(r.year); r.typical = quantile(t, 0.5); r.pctOfTypical = r.typical > 0 ? (100 * r.total) / r.typical : NaN; }
-    const all = refTotals(null);
-    return { start: mdOf(s), end: mdOf(e), peak: mdOf(pk), typicalTotal: quantile(all, 0.5), nRef: all.length, years };
+    // Typical peak = median of the reference years' own peak dates (HQ D48, stakeholder-02 N2), with the 25th–75th percentile
+    // window. Each year's early/late shift is measured from the median of the OTHER reference years' peaks.
+    const refPeaks = (skipYear) => years.filter((r) => r.usable && inRef(r.year) && r.year !== skipYear && r.peakDoy != null).map((r) => r.peakDoy).sort((x, y) => x - y);
+    for (const r of years) {
+      const t = refTotals(r.year); r.typical = quantile(t, 0.5); r.pctOfTypical = r.typical > 0 ? (100 * r.total) / r.typical : NaN;
+      const pks = refPeaks(r.year); const tp = quantile(pks, 0.5);
+      r.shift = r.peakDoy != null && !Number.isNaN(tp) ? Math.round(r.peakDoy - tp) : null;
+    }
+    const all = refTotals(viewYear);
+    const pks = refPeaks(viewYear);
+    const tpk = pks.length ? Math.round(quantile(pks, 0.5)) : pk;
+    return { start: mdOf(s), end: mdOf(e), peak: mdOf(tpk), peakLo: pks.length ? mdOf(Math.round(quantile(pks, 0.25))) : null,
+      peakHi: pks.length ? mdOf(Math.round(quantile(pks, 0.75))) : null, nPeaks: pks.length, typicalTotal: quantile(all, 0.5), nRef: all.length, years };
   });
   return { periods: res, clim: sm };
 }
@@ -159,7 +169,7 @@ export function verdict(y) {
   if (!y) return '';
   const timing = y.shift == null ? '' : Math.abs(y.shift) <= 5 ? 'on time' : y.shift < 0 ? `${-y.shift} d early` : `${y.shift} d late`;
   const size = Number.isNaN(y.pctOfTypical) ? '' : y.pctOfTypical >= 125 ? 'above normal' : y.pctOfTypical <= 75 ? 'below normal' : 'near normal';
-  return [timing, size].filter(Boolean).join(', ');
+  return [timing, size && y.partial ? `${size} so far` : size].filter(Boolean).join(', ');
 }
 
 // Typical total of a window = median over the given years of each year's own total for the same calendar window

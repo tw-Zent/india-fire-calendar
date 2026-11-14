@@ -7,12 +7,14 @@ ML: LightGBM (Poisson), features from MODIS detections only, trained on 2012-201
 Writes interim/hybrid_factors.parquet (tile, ph, d, f = h_hybrid / M3) and interim/hybrid_panel.parquet.
 """
 import polars as pl
+import polars.selectors  # noqa: F401
 import lightgbm as lgb
 from config import INTERIM, EXAMPLE_BBOX
 from harmonize import fit_final, predict, FIT_YEARS_MODIS
 
 PARAMS = dict(objective="poisson", n_estimators=600, learning_rate=0.05, num_leaves=63, min_child_samples=50,
-              subsample=0.8, subsample_freq=1, colsample_bytree=0.8, reg_lambda=1.0, random_state=0, verbose=-1)
+              subsample=0.8, subsample_freq=1, colsample_bytree=0.8, reg_lambda=1.0, random_state=0, verbose=-1,
+              deterministic=True, force_row_wise=True, num_threads=1, seed=20261114)  # v1.3.1: bit-for-bit reproducible
 NOT_FEATURES = {"tile", "d", "s", "has_s", "year", "mask"}
 
 def unit_cols():
@@ -40,6 +42,7 @@ def build_panel():
                  pl.col("scan").filter(f).mean().alias(f"{p}_scan"), pl.col("tmin").filter(f).mean().alias(f"{p}_tmin"),
                  pl.col("tmin").filter(f).std().alias(f"{p}_tmin_sd")]
     feat = m.group_by("tile", "ph", "d").agg(aggs).collect(engine="streaming")
+    feat = feat.with_columns(pl.selectors.float().round(6))   # strip summation-order noise
     s = (pl.scan_parquet(INTERIM / "clean_snpp" / "*.parquet").with_columns(*unit_cols())
            .group_by("tile", "ph", "d").agg(pl.len().alias("s")).collect(engine="streaming"))
     cov = pl.read_parquet(INTERIM / "coverage_days.parquet").with_columns(pl.col("mask").cast(pl.Int32))
@@ -53,7 +56,7 @@ def build_panel():
         pl.from_epoch(pl.col("d") * 86400).dt.month().cast(pl.Int8).alias("month"),
         pl.from_epoch(pl.col("d") * 86400).dt.year().cast(pl.Int16).alias("year"),
         pl.from_epoch(pl.col("d") * 86400).dt.ordinal_day().cast(pl.Int16).alias("doy"),
-        ((pl.col("tile") // 3600) * 2 - 90 + 1).alias("lat_c"), ((pl.col("tile") % 3600) * 2 - 180 + 1).alias("lon_c"))
+        ((pl.col("tile") // 3600) * 2 - 90 + 1).alias("lat_c"), ((pl.col("tile") % 3600) * 2 - 180 + 1).alias("lon_c")).sort("tile", "ph", "d")  # fixed row order -> reproducible model
 
 def main():
     panel = build_panel()
@@ -67,7 +70,7 @@ def main():
     F = fit_final(td)
     ta_days = td.filter(((pl.col("mask") & 3) == 3) & ((pl.col("mask") & 12) == 0))
     m3 = predict(ta_days, F["ta"]).group_by("tile", "ph", "d").agg(pl.col("pred").sum().alias("M3"))
-    x = panel.join(m3, on=["tile", "ph", "d"], how="inner")
+    x = panel.join(m3, on=["tile", "ph", "d"], how="inner").sort("tile", "ph", "d")
     um = ["tile", "ph", "year", "month"]
     x = x.with_columns(pl.when(pl.col("M3") > 0).then(pl.col("ML")).otherwise(0.0).alias("_ml"))
     x = x.with_columns(pl.col("M3").sum().over(um).alias("_m3m"), pl.col("_ml").sum().over(um).alias("_mlm"))

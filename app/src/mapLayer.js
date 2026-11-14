@@ -7,7 +7,7 @@ export const DIV = { bins: [-75, -50, -25, 25, 50, 100], colors: ['#08519c', '#4
 export const DIV_LABELS = ['≤ −75 %', '−75 to −50 %', '−50 to −25 %', '−25 to +25 %', '+25 to +50 %', '+50 to +100 %', '> +100 %'];
 // Cells whose typical window total is below this are not compared (stakeholder-01 #4): "too few fires to compare".
 export const MIN_TYPICAL = 3;
-export const TOO_FEW_RGBA = [150, 150, 150, 150];
+export const TOO_FEW_RGBA = [248, 248, 248, 235]; // near-white, clearly unlike the dark-grey "no data" mask (stakeholder-02 N5)
 
 const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
