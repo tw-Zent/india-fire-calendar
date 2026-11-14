@@ -1,0 +1,353 @@
+{
+ "raw_modis_archive": {
+  "rows": 1917344,
+  "date_min": "2000-11-01",
+  "date_max": "2026-08-31",
+  "n_days": 9275,
+  "lat_min": 6.7586,
+  "lat_max": 34.9734,
+  "lon_min": 68.3144,
+  "lon_max": 97.3359,
+  "frp_min": 0.0,
+  "frp_med": 13.8,
+  "frp_p99": 287.2,
+  "frp_max": 11212.0,
+  "frp_null": 0,
+  "scan_max": 4.8,
+  "track_max": 2.0,
+  "values_satellite": {
+   "Aqua": 1322914,
+   "Terra": 594430
+  },
+  "values_instrument": {
+   "MODIS": 1917344
+  },
+  "values_version": {
+   "6.03": 1600841,
+   "61.03": 316503
+  },
+  "values_daynight": {
+   "D": 1721707,
+   "N": 195637
+  },
+  "values_type": {
+   "0": 1819804,
+   "1": 25,
+   "2": 95601,
+   "3": 1914
+  },
+  "confidence": {
+   "kind": "0-100",
+   "min": 0,
+   "max": 100,
+   "lt30": 79811,
+   "30to79": 1471636,
+   "ge80": 365897
+  },
+  "exact_dup_rows": 0,
+  "missing_days": 160,
+  "missing_runs_ge3d": [
+   [
+    "2001-06-15",
+    "2001-07-03",
+    19
+   ],
+   [
+    "2001-08-03",
+    "2001-08-05",
+    3
+   ],
+   [
+    "2002-03-20",
+    "2002-03-28",
+    9
+   ],
+   [
+    "2002-08-11",
+    "2002-08-13",
+    3
+   ]
+  ]
+ },
+ "raw_modis_nrt": {
+  "rows": 11017,
+  "date_min": "2026-09-01",
+  "date_max": "2026-11-13",
+  "n_days": 74,
+  "lat_min": 8.23239,
+  "lat_max": 34.59762,
+  "lon_min": 68.55468,
+  "lon_max": 97.02763,
+  "frp_min": 0.0,
+  "frp_med": 9.94,
+  "frp_p99": 74.05,
+  "frp_max": 431.8,
+  "frp_null": 0,
+  "scan_max": 4.82,
+  "track_max": 2.0,
+  "values_satellite": {
+   "Aqua": 8404,
+   "Terra": 2613
+  },
+  "values_instrument": {
+   "MODIS": 11017
+  },
+  "values_version": {
+   "6.1NRT": 11017
+  },
+  "values_daynight": {
+   "D": 9618,
+   "N": 1399
+  },
+  "values_type": {
+   "None": 11017
+  },
+  "confidence": {
+   "kind": "0-100",
+   "min": 0,
+   "max": 100,
+   "lt30": 491,
+   "30to79": 9221,
+   "ge80": 1305
+  },
+  "exact_dup_rows": 0,
+  "missing_days": 0,
+  "missing_runs_ge3d": []
+ },
+ "raw_noaa20_archive": {
+  "rows": 5109832,
+  "date_min": "2018-04-01",
+  "date_max": "2026-07-31",
+  "n_days": 3038,
+  "lat_min": 6.92436,
+  "lat_max": 34.77618,
+  "lon_min": 68.50005,
+  "lon_max": 97.20707,
+  "frp_min": 0.0,
+  "frp_med": 3.6,
+  "frp_p99": 48.3,
+  "frp_max": 2160.96,
+  "frp_null": 0,
+  "scan_max": 0.8,
+  "track_max": 0.78,
+  "values_satellite": {
+   "N20": 5109832
+  },
+  "values_instrument": {
+   "VIIRS": 5109832
+  },
+  "values_version": {
+   "2": 5109832
+  },
+  "values_daynight": {
+   "D": 3607519,
+   "N": 1502313
+  },
+  "values_type": {
+   "0": 4502607,
+   "1": 56,
+   "2": 596620,
+   "3": 10549
+  },
+  "confidence": {
+   "kind": "class",
+   "l": 884730,
+   "n": 4091364,
+   "h": 133738
+  },
+  "exact_dup_rows": 0,
+  "missing_days": 6,
+  "missing_runs_ge3d": [
+   [
+    "2023-07-19",
+    "2023-07-22",
+    4
+   ]
+  ]
+ },
+ "raw_noaa20_nrt": {
+  "rows": 53854,
+  "date_min": "2026-08-01",
+  "date_max": "2026-11-13",
+  "n_days": 105,
+  "lat_min": 8.20027,
+  "lat_max": 34.56646,
+  "lon_min": 68.53927,
+  "lon_max": 97.02126,
+  "frp_min": 0.13,
+  "frp_med": 2.68,
+  "frp_p99": 20.15,
+  "frp_max": 249.99,
+  "frp_null": 0,
+  "scan_max": 0.8,
+  "track_max": 0.78,
+  "values_satellite": {
+   "N20": 53854
+  },
+  "values_instrument": {
+   "VIIRS": 53854
+  },
+  "values_version": {
+   "2.0NRT": 53854
+  },
+  "values_daynight": {
+   "D": 32515,
+   "N": 21339
+  },
+  "values_type": {
+   "None": 53854
+  },
+  "confidence": {
+   "kind": "class",
+   "n": 47344,
+   "l": 6075,
+   "h": 435
+  },
+  "exact_dup_rows": 0,
+  "missing_days": 0,
+  "missing_runs_ge3d": []
+ },
+ "raw_snpp_archive": {
+  "rows": 8726813,
+  "date_min": "2012-01-20",
+  "date_max": "2026-07-31",
+  "n_days": 5255,
+  "lat_min": 6.79891,
+  "lat_max": 35.11223,
+  "lon_min": 68.49146,
+  "lon_max": 97.21292,
+  "frp_min": 0.0,
+  "frp_med": 3.68,
+  "frp_p99": 51.34,
+  "frp_max": 1552.82,
+  "frp_null": 0,
+  "scan_max": 0.8,
+  "track_max": 0.78,
+  "values_satellite": {
+   "SNPP": 8726813
+  },
+  "values_instrument": {
+   "SNPP": 8726813
+  },
+  "values_version": {
+   "2": 8726813
+  },
+  "values_daynight": {
+   "D": 6253940,
+   "N": 2472873
+  },
+  "values_type": {
+   "0": 7782376,
+   "1": 91,
+   "2": 924256,
+   "3": 20090
+  },
+  "confidence": {
+   "kind": "class",
+   "l": 1513266,
+   "n": 6957355,
+   "h": 256192
+  },
+  "exact_dup_rows": 0,
+  "missing_days": 52,
+  "missing_runs_ge3d": [
+   [
+    "2022-07-27",
+    "2022-08-10",
+    15
+   ],
+   [
+    "2024-05-30",
+    "2024-06-03",
+    5
+   ],
+   [
+    "2024-07-10",
+    "2024-07-15",
+    6
+   ],
+   [
+    "2024-07-24",
+    "2024-07-28",
+    5
+   ],
+   [
+    "2024-11-03",
+    "2024-11-05",
+    3
+   ],
+   [
+    "2026-03-10",
+    "2026-03-12",
+    3
+   ],
+   [
+    "2026-04-28",
+    "2026-04-30",
+    3
+   ],
+   [
+    "2026-07-11",
+    "2026-07-16",
+    6
+   ]
+  ]
+ },
+ "raw_snpp_nrt": {
+  "rows": 31579,
+  "date_min": "2026-08-01",
+  "date_max": "2026-11-02",
+  "n_days": 93,
+  "lat_min": 8.16195,
+  "lat_max": 34.56631,
+  "lon_min": 68.53159,
+  "lon_max": 97.02945,
+  "frp_min": 0.09,
+  "frp_med": 2.34,
+  "frp_p99": 15.44,
+  "frp_max": 116.75,
+  "frp_null": 0,
+  "scan_max": 0.8,
+  "track_max": 0.78,
+  "values_satellite": {
+   "SNPP": 31579
+  },
+  "values_instrument": {
+   "SNPP": 31579
+  },
+  "values_version": {
+   "2.0NRT": 31579
+  },
+  "values_daynight": {
+   "D": 14904,
+   "N": 16675
+  },
+  "values_type": {
+   "None": 31579
+  },
+  "confidence": {
+   "kind": "class",
+   "h": 147,
+   "l": 2957,
+   "n": 28475
+  },
+  "exact_dup_rows": 0,
+  "missing_days": 1,
+  "missing_runs_ge3d": []
+ },
+ "overlap_modis": {
+  "archive_end": "2026-08-31",
+  "nrt_start": "2026-09-01",
+  "nrt_rows_on_or_before_archive_end": 0
+ },
+ "overlap_snpp": {
+  "archive_end": "2026-07-31",
+  "nrt_start": "2026-08-01",
+  "nrt_rows_on_or_before_archive_end": 0
+ },
+ "overlap_noaa20": {
+  "archive_end": "2026-07-31",
+  "nrt_start": "2026-08-01",
+  "nrt_rows_on_or_before_archive_end": 0
+ }
+}

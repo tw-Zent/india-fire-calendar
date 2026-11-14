@@ -1,0 +1,18 @@
+# data (download from FIRMS / regenerate with the pipeline)
+data/raw/
+data/processed/tiles/
+data/processed/sample/
+data/processed/interim/
+data/processed/archive/
+data/processed/experiments/
+*.parquet
+*.log
+# build and tooling
+app/dist/
+app/node_modules/
+app/_bundle/
+app/.firebase/
+app/public/data/
+__pycache__/
+*.pyc
+.env*

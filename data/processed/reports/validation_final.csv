@@ -1,0 +1,7 @@
+source,region,daily_nmae_B0,daily_r_B0,monthly_nmae_B0,total_bias_B0,octnov_peak_shift_days_B0,daily_nmae_M3,daily_r_M3,monthly_nmae_M3,total_bias_M3,octnov_peak_shift_days_M3,verdict,shipped
+Terra+Aqua,India,0.351,0.868,0.1,0.016,1.2,0.318,0.909,0.095,0.01,1.0,M3 better,M3
+Terra+Aqua,Punjab_Haryana,0.76,0.75,0.262,0.222,1.5,0.669,0.751,0.157,0.033,1.2,M3 better,M3
+Terra only (direct),India,0.482,0.797,0.315,0.002,10.2,0.399,0.853,0.118,-0.036,10.2,M3 better,M3
+Terra only (direct),Punjab_Haryana,1.017,0.404,0.799,-0.19,2.8,0.928,0.616,0.29,-0.088,2.8,M3 better,M3
+NOAA-20,India,0.227,0.941,0.031,-0.004,2.0,0.223,0.945,0.023,-0.007,1.5,M3 better,B0
+NOAA-20,Punjab_Haryana,0.308,0.957,0.044,-0.011,0.0,0.305,0.957,0.045,-0.017,0.0,M3 worse,B0

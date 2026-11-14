@@ -1,0 +1,5 @@
+test,region,daily_nmae_M3,daily_r_M3,monthly_nmae_M3,total_bias_M3,octnov_peak_shift_days_M3,daily_nmae_HY,daily_r_HY,monthly_nmae_HY,total_bias_HY,octnov_peak_shift_days_HY,daily_nmae_change
+held-out 2013/2017/2021/2025,India,0.318,0.909,0.095,0.01,1.0,0.225,0.953,0.095,0.01,1.0,-0.292
+held-out 2013/2017/2021/2025,Punjab_Haryana,0.669,0.753,0.157,0.033,1.2,0.384,0.912,0.157,0.033,1.0,-0.426
+fresh 2020/2022/2023/2024,India,0.34,0.87,0.106,0.01,1.5,0.24,0.936,0.106,0.01,2.8,-0.294
+fresh 2020/2022/2023/2024,Punjab_Haryana,0.722,0.762,0.22,0.097,4.0,0.46,0.911,0.22,0.097,1.8,-0.363

@@ -1,0 +1,4 @@
+sensor,raw_archive,raw_nrt,nrt_dropped_archive_wins,duplicates_dropped,static_type_dropped,static_mask_dropped,low_conf_dropped,clean,check_zero
+modis,1917344,11017,0,0,97540,7395,71179,1752247,0
+snpp,8726813,31579,0,3,944437,93441,1475974,6244537,0
+noaa20,5109832,53854,0,2,607225,60583,864029,3631847,0
