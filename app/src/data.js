@@ -9,6 +9,17 @@ export const SENSOR_LABELS = { t: 'MODIS Terra', a: 'MODIS Aqua', s: 'VIIRS S-NP
 
 let meta = null;
 let unc = null;
+let driftCsv = null;
+// year → { Aqua: hours, Terra: hours } median daytime detection time, local solar (Pipeline, P&H box)
+function parseDrift(t) {
+  if (!t) return null;
+  const [head, ...rows] = t.trim().split(/\r?\n/);
+  const H = head.split(','); const iy = H.indexOf('year'), is = H.indexOf('satellite'), it = H.indexOf('lst_med');
+  if (iy < 0 || is < 0 || it < 0) return null;
+  const out = {};
+  for (const r of rows) { const c = r.split(','); (out[+c[iy]] ||= {})[c[is]] = +c[it]; }
+  return out;
+}
 const tileCache = new Map();
 
 const epochDay = (iso) => Math.round(Date.parse(iso + 'T00:00:00Z') / DAY);
@@ -19,6 +30,7 @@ export async function loadMeta() {
     fetch(BASE + 'manifest.json').then((r) => { if (!r.ok) throw new Error('manifest.json missing'); return r.json(); }),
     fetch(BASE + 'coverage.json').then((r) => { if (!r.ok) throw new Error('coverage.json missing'); return r.json(); }),
     fetch(BASE + 'domain.json').then((r) => (r.ok ? r.json() : null)).catch(() => null), // contract ≥1.1
+    fetch(BASE + 'aqua_overpass_drift.csv').then((r) => (r.ok ? r.text() : null)).catch(() => null).then((t) => { driftCsv = t; }),
     fetch(BASE + 'uncertainty.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((u) => { unc = u; }),
   ]);
   const uncUsed = applyUncertainty(unc, man.version);
@@ -57,6 +69,7 @@ export async function loadMeta() {
     domain,
     domainCells: dom?.n_cells ?? null,
     uncertaintyFrom: uncUsed ? 'uncertainty.json' : 'app config',
+    overpass: parseDrift(driftCsv),
     harmonized_label: 'Harmonized (S-NPP-VIIRS-equivalent detections)',
   };
   return meta;

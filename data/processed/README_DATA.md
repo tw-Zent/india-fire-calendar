@@ -23,7 +23,7 @@ Day numbers are days since 1970-01-01 (UTC). Exact field definitions, encoding (
 `python pipeline/run_all.py` rebuilds everything from the raw NASA FIRMS CSVs in about 7 minutes, bit for bit; see `pipeline/README.md`.
 
 ## Credit and licence
-- **Fire data:** NASA FIRMS active-fire products, MODIS Collection 6.1 (Terra, Aqua) and VIIRS 375 m (S-NPP, NOAA-20), standard archive plus near-real-time. Credit line: *"We acknowledge the use of data from NASA's Fire Information for Resource Management System (FIRMS) (https://firms.modaps.eosdis.nasa.gov), part of NASA's Earth Science Data and Information System (ESDIS)."* NASA data are freely and openly available.
+- **Fire data:** NASA FIRMS active-fire products, MODIS Collection 6.1 (Terra, Aqua) and VIIRS 375 m (S-NPP, NOAA-20), standard archive plus near-real-time. Acknowledgement: *"We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Land, Atmosphere Near real-time Capability for Earth observations (LANCE) (https://earthdata.nasa.gov/lance) and NASA's Earth Science Data and Information System (ESDIS)."* NASA data are freely and openly available.
 - **This derived dataset:** licence **CC BY 4.0**. Derived from NASA FIRMS active-fire data (MODIS C6.1, VIIRS S-NPP/NOAA-20 C2); see FIRMS for the source data terms.
-- **Cite as:** India Fire Calendar: harmonized MODIS/VIIRS active-fire record for India, v1.3.1 (2026), built from NASA FIRMS data. NASA Space Apps Challenge 2026. Code: https://github.com/tw-Zent/india-fire-calendar.
+- **Cite as:** Das, A. (2026). India Fire Calendar: harmonized MODIS/VIIRS active-fire record for India, v1.3.1. NASA Space Apps Challenge 2026. https://github.com/tw-Zent/india-fire-calendar
 - AI assistance: code, analysis and documentation were produced with Claude (Anthropic) as an AI assistant, directed and reviewed by Ashish Das.

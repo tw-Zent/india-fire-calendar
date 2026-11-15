@@ -12,7 +12,7 @@ function save(blob, name) {
 
 const cell = (v) => (Number.isNaN(v) || v === undefined ? '' : String(+(+v).toFixed(3)));
 
-export function downloadCSV({ meta, agg, sel, from, to, cmp, ref, win, skipT, fileBase }) {
+export function downloadCSV({ meta, agg, sel, from, to, cmp, ref, win, skipT, fileBase, caveats }) {
   const area = sel.type === 'rect'
     ? `bbox S${sel.bounds[0][0].toFixed(3)} W${sel.bounds[0][1].toFixed(3)} N${sel.bounds[1][0].toFixed(3)} E${sel.bounds[1][1].toFixed(3)}`
     : `polygon ${sel.latlngs.map(([a, b]) => `${a.toFixed(3)} ${b.toFixed(3)}`).join('; ')}`;
@@ -25,6 +25,7 @@ export function downloadCSV({ meta, agg, sel, from, to, cmp, ref, win, skipT, fi
     q(`# harmonized = S-NPP-VIIRS-equivalent detections per day; *_raw = clean detections per satellite (not harmonized)`),
     q(`# median/p25/p75 = same calendar day across reference years ${ref?.[0]}-${ref?.[1]}${ref?.[0] <= 2002 ? ' (includes lower-confidence Terra-only years)' : ''} excluding the day's own year${skipT ? ' and terra_only days' : ''}; smoothing ${win > 1 ? win + '-day centred mean' : 'none'}`),
     q('# Empty cell = no satellite coverage that day (unknown, not zero)'),
+    ...(caveats || []).map((c) => q(`# caveat: ${c}`)),
     q('# code: https://github.com/tw-Zent/india-fire-calendar'),
     q('# ai_assistance: Built with AI assistance (Claude, Anthropic), directed and reviewed by Ashish Das.'),
     q('# regime = which satellites the harmonized value rests on: viirs_snpp (S-NPP observed directly) / viirs_noaa20_filled (NOAA-20 converted, S-NPP missing) / modis_ta (Terra+Aqua) / terra_only (lower confidence) / none'),

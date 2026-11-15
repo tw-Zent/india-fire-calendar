@@ -6,7 +6,7 @@ import polars as pl, lightgbm as lgb
 from config import INTERIM, REPORTS, REGION_NAME, EXAMPLE_NAME
 from validate import metrics
 from harmonize import fit, predict
-from hybrid import build_panel, PARAMS, NOT_FEATURES
+from hybrid import build_panel, NOT_FEATURES, SEEDS, ensemble_predict
 
 TRAIN = [2012, 2014, 2015, 2016, 2018, 2019]
 SETS = {"held-out 2013/2017/2021/2025": [2013, 2017, 2021, 2025], "fresh 2020/2022/2023/2024": [2020, 2022, 2023, 2024]}
@@ -16,8 +16,8 @@ def main():
     feats = [c for c in p.columns if c not in NOT_FEATURES]
     p = p.filter((pl.col("mask") & 7) == 7)                       # days when Terra, Aqua and S-NPP all flew
     tr = p.filter(pl.col("year").is_in(TRAIN))
-    model = lgb.LGBMRegressor(**PARAMS).fit(tr.select(feats).to_pandas(), tr["s"].to_numpy())
-    p = p.with_columns(pl.Series("ML", model.predict(p.select(feats).to_pandas())))
+    p = p.filter(pl.col("year").is_in([y for ys in SETS.values() for y in ys]))   # only test years need predictions
+    p = p.with_columns(pl.Series("ML", ensemble_predict(tr, p, feats, SEEDS)))     # same model as production
     td = pl.read_parquet(INTERIM / "tileday_dn.parquet").filter((pl.col("mask") & 7) == 7)
     f3 = fit(td.filter(pl.col("year").is_in(TRAIN)), "ta", "M3", 200.0)
     m3 = predict(td, f3).group_by("tile", "ph", "d").agg(pl.col("pred").sum().alias("M3"))

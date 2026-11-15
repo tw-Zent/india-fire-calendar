@@ -143,7 +143,8 @@ export function criticalPeriods(meta, h, refFrom, refTo, skipTerraOnly = true, v
       const peakDoy = peakIso ? Math.round((Date.parse(`2001-${md(peakIso)}`) - Date.parse('2001-01-01')) / 86400000) : null;
       // usable as a reference year: complete, ≥ 90 % of days covered, and (by default) no Terra-only days
       const usable = !partial && n >= 0.9 * L && !(skipTerraOnly && terra > 0);
-      years.push({ year: y, total: tot, peak: peakIso, peakDoy, gaps, partial, usable });
+      // open = season still open at the latest data date ("so far"); startTrunc = season starts before the record (2000)
+      years.push({ year: y, total: tot, peak: peakIso, peakDoy, gaps, partial, open: b >= meta.n_days, startTrunc: a < 0, usable });
     }
     // "Typical" season total = median over reference years of each year's OWN season total (HQ, stakeholder-01 #1),
     // leaving out the year being judged — not the sum of daily medians.
@@ -169,7 +170,7 @@ export function verdict(y) {
   if (!y) return '';
   const timing = y.shift == null ? '' : Math.abs(y.shift) <= 5 ? 'on time' : y.shift < 0 ? `${-y.shift} d early` : `${y.shift} d late`;
   const size = Number.isNaN(y.pctOfTypical) ? '' : y.pctOfTypical >= 125 ? 'above normal' : y.pctOfTypical <= 75 ? 'below normal' : 'near normal';
-  return [timing, size && y.partial ? `${size} so far` : size].filter(Boolean).join(', ');
+  return [timing, size && y.open ? `${size} so far` : size].filter(Boolean).join(', ');
 }
 
 // Typical total of a window = median over the given years of each year's own total for the same calendar window

@@ -21,7 +21,7 @@ AI assistance: code, analysis and documentation were produced with Claude (Anthr
 | MODIS Terra + Aqua (Jul 2002 – 2011, VIIRS gaps) | 10–16 % | 22–38 % |
 | MODIS Terra only (before 4 Jul 2002) | 12–29 % | 40–93 % |
 
-Monthly and seasonal patterns are dependable in every period; single days before 2012 are rougher than after, and Terra-only days are rough, so use 7-day smoothing there. Machine-readable: `data/processed/reports/uncertainty.json`.
+Daily values on MODIS-era days are model estimates: changing the model's random seed alone moves daily totals by a median of 4–7% (India / Punjab & Haryana), by more than 17–28% on one day in ten, and on a few busy burning days by more than double; monthly totals don't change. Treat single MODIS-era days as rough and compare months or 7-day means. Monthly and seasonal patterns are dependable in every period; single days before 2012 are rougher than after, and Terra-only days are rough, so use 7-day smoothing there. Machine-readable: [uncertainty.json](https://github.com/tw-Zent/india-fire-calendar/blob/main/data/processed/reports/uncertainty.json).
 
 **Limits — please read.**
 - *Detections ≠ fires or burned area.* They are hotspots seen at overpass time (MODIS ~10:30 / 13:30 and ~22:30 / 01:30 local; VIIRS ~13:30 / 01:30). Clouds and smoke hide fires, and the data carries no cloud information, so a zero-detection day may simply be cloudy.
@@ -30,13 +30,21 @@ Monthly and seasonal patterns are dependable in every period; single days before
 - *Ratio drift after 2019.* Ratios fitted on 2012–2019 overestimate Punjab & Haryana by about 10% in 2020–2024, likely from Terra/Aqua orbit drift. This affects only MODIS-filled days after 2012 (when both VIIRS were missing); on held-out years the pre-2012 bias is +3%.
 - *Terra-only days zig-zag:* one MODIS satellite views an area well only every other day. Use 7-day smoothing for 2000–2002.
 - *The unit is detections, not burned area or fire intensity;* those are future work.
-- *Aqua's overpass has drifted later.* In the Punjab & Haryana box (1 Oct–13 Nov), Aqua's daytime detections moved from about 13:15 local solar time in 2018–2021 to about 14:45 in 2025 and 15:30 in 2026. Both VIIRS satellites stayed near 13:10, and Terra drifted earlier (about 10:55 → 09:10). Over the same years the Aqua/NOAA-20 detection ratio rose from 0.2 to 1.1. This is consistent with part of the burning happening later in the afternoon, which the drifting Aqua now catches and the ~13:30 VIIRS passes miss; it does not prove it. So the recent drop measured by VIIRS may partly be a shift of burning to later hours. The harmonized record uses Aqua after 2012 only to fill VIIRS gaps. Evidence: `reports/aqua_overpass_drift.png` / `.csv`.
+- *Aqua's overpass has drifted later.* In the Punjab & Haryana box (1 Oct–13 Nov), Aqua's daytime detections moved from about 13:15 local solar time in 2018–2021 to about 14:45 in 2025 and 15:30 in 2026. Both VIIRS satellites stayed near 13:10, and Terra drifted earlier (about 10:55 → 09:10). Over the same years the Aqua/NOAA-20 detection ratio rose from 0.2 to 1.1. This is consistent with part of the burning happening later in the afternoon, which the drifting Aqua now catches and the ~13:30 VIIRS passes miss; it does not prove it. So the recent drop measured by VIIRS may partly be a shift of burning to later hours. The harmonized record uses Aqua after 2012 only to fill VIIRS gaps. Evidence: [chart](https://github.com/tw-Zent/india-fire-calendar/blob/main/data/processed/reports/aqua_overpass_drift.png), [table](https://github.com/tw-Zent/india-fire-calendar/blob/main/data/processed/reports/aqua_overpass_drift.csv).
 - *Punjab & Haryana decline.* Harmonized detections in Oct–Nov fell from 97,882 (2016) to **6,870** (2025), and NOAA-20 shows the same drop. The 2025 harmonized value is above S-NPP's own count (6,369 in total; 5,960 on the days S-NPP fully covered) because 4 S-NPP partial-outage days (21 and 27 Oct, 1 and 12 Nov) are filled from NOAA-20. Part of the decline is likely real, but part may be burning moving later in the afternoon, after the satellites pass. Counts can't tell these apart, so we don't claim the whole drop is less burning. All Punjab & Haryana figures use the preset box 27.5–32.6° N, 73.8–77.6° E, which also includes north Rajasthan and slivers of Jammu & Kashmir and Himachal Pradesh.
 - *No coverage ≠ zero.* Days when no satellite delivered data, and cells outside India, are shown as no data.
 
-**Reproduce.** `python pipeline/run_all.py` rebuilds everything from the raw FIRMS CSVs in about 7 minutes and reproduces the published files bit for bit (see `pipeline/README.md`). Data contract: `data/processed/CONTRACT.md`. Ratio table: `data/processed/reports/harmonization_ratios.csv`.
+**Reproduce.** `python pipeline/run_all.py` rebuilds everything from the raw FIRMS CSVs in about 7 minutes and reproduces the published files bit for bit (see [pipeline/README.md](https://github.com/tw-Zent/india-fire-calendar/blob/main/pipeline/README.md)). Data contract: [CONTRACT.md](https://github.com/tw-Zent/india-fire-calendar/blob/main/data/processed/CONTRACT.md). Ratio table: [harmonization_ratios.csv](https://github.com/tw-Zent/india-fire-calendar/blob/main/data/processed/reports/harmonization_ratios.csv).
 
-**How to cite.** India Fire Calendar: harmonized MODIS/VIIRS active-fire record for India, v1.3.1 (2026), built from NASA FIRMS data. NASA Space Apps Challenge 2026. Code: https://github.com/tw-Zent/india-fire-calendar. Fire data: NASA FIRMS (see `README_DATA.md` for the credit line).
+**How to cite.** Das, A. (2026). India Fire Calendar: harmonized MODIS/VIIRS active-fire record for India, v1.3.1. NASA Space Apps Challenge 2026. https://github.com/tw-Zent/india-fire-calendar. Fire data: We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Land, Atmosphere Near real-time Capability for Earth observations (LANCE) (https://earthdata.nasa.gov/lance) and NASA's Earth Science Data and Information System (ESDIS).
+
+**Future work.**
+- Average more model seeds for the daily shape: a 5-seed average halved the seed sensitivity (Punjab & Haryana daily totals: median change 6.5% → 3.0%), but about 11 seeds would be needed to reach our 2% target
+- Harmonize fire intensity (FRP), not only detection counts
+- Link detections to burned area
+- Add NOAA-21, the third VIIRS satellite
+- A global run (the code already takes any region; see the pipeline README)
+- App views: overlay years, compare areas side by side
 
 ---
 

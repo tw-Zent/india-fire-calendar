@@ -38,6 +38,8 @@ for (const f of ['fig_aqua_drift.png', 'aqua_overpass_drift.png']) {
   const p = path.join(proc, 'reports', f);
   if (fs.existsSync(p)) { fs.copyFileSync(p, path.join(dst, 'fig_aqua_drift.png')); break; }
 }
+const drift = path.join(proc, 'reports', 'aqua_overpass_drift.csv'); // per-year overpass times for the caution line (F7)
+if (fs.existsSync(drift)) fs.copyFileSync(drift, path.join(dst, 'aqua_overpass_drift.csv'));
 const unc = path.join(proc, 'reports', 'uncertainty.json');
 if (fs.existsSync(unc)) fs.copyFileSync(unc, path.join(dst, 'uncertainty.json'));
 let n = 0;

@@ -156,3 +156,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .mdfig { margin: 8px 0 4px; }
 .mdfig img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; }
 .mdfig figcaption { font-size: .78rem; color: #333; margin-top: 3px; }
+.lead { font-size: .9rem; margin: 2px 0 6px; color: #111; }
+.lead .keyfind { font-weight: 600; white-space: nowrap; }
+.toc { font-size: .85rem; margin: 4px 0 10px; padding: 6px 8px; background: #fff; border: 1px solid #e3e6e9; border-radius: 6px; line-height: 1.8; }
+.md td, .md th { white-space: nowrap; }
+.md table { max-width: 100%; }

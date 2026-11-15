@@ -5,7 +5,11 @@ Method and limits in plain words: [`data/processed/METHODS.md`](../data/processe
 
 Code: https://github.com/tw-Zent/india-fire-calendar · Licence for derived data: CC BY 4.0 (source data: NASA FIRMS).
 
+We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Land, Atmosphere Near real-time Capability for Earth observations (LANCE) (https://earthdata.nasa.gov/lance) and NASA's Earth Science Data and Information System (ESDIS).
+
 AI assistance: code, analysis and documentation were produced with Claude (Anthropic) as an AI assistant, directed and reviewed by Ashish Das.
+
+**Cite as:** Das, A. (2026). India Fire Calendar: harmonized MODIS/VIIRS active-fire record for India, v1.3.1. NASA Space Apps Challenge 2026. https://github.com/tw-Zent/india-fire-calendar
 
 ## Setup
 Python ≥ 3.10.

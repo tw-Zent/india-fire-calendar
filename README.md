@@ -46,7 +46,7 @@ We acknowledge the use of data and/or imagery from NASA's Fire Information for R
 AI assistance: code, analysis and documentation were produced with Claude (Anthropic) as an AI assistant, directed and reviewed by Ashish Das.
 
 ## How to cite
-> Ashish (2026). *India Fire Calendar: harmonized MODIS + VIIRS active-fire record, 2000–2026.* NASA Space Apps Challenge 2026. https://nasa-space-app-2026.web.app
+> Das, A. (2026). India Fire Calendar: harmonized MODIS/VIIRS active-fire record for India, v1.3.1. NASA Space Apps Challenge 2026. https://github.com/tw-Zent/india-fire-calendar
 
 ## Licence
 - Code: [MIT](LICENSE).

@@ -3,7 +3,8 @@
 For each unit (2-degree tile, split at the example bbox) x month, over the MODIS-filled Terra+Aqua days that have M3 > 0:
     h_hybrid(day) = M3_month_total * ML(day) / sum(ML over those days)
 Days with M3 = 0 keep 0 (so monthly and annual totals equal M3 exactly, and cells are allocated by that day's M3 shares).
-ML: LightGBM (Poisson), features from MODIS detections only, trained on 2012-2019 days when Terra, Aqua and S-NPP all flew.
+ML: one LightGBM (Poisson) model (a 5-seed mean was tested, see SEEDS), features from MODIS detections only,
+trained on 2012-2019 days when Terra, Aqua and S-NPP all flew.
 Writes interim/hybrid_factors.parquet (tile, ph, d, f = h_hybrid / M3) and interim/hybrid_panel.parquet.
 """
 import polars as pl
@@ -58,24 +59,40 @@ def build_panel():
         pl.from_epoch(pl.col("d") * 86400).dt.ordinal_day().cast(pl.Int16).alias("doy"),
         ((pl.col("tile") // 3600) * 2 - 90 + 1).alias("lat_c"), ((pl.col("tile") % 3600) * 2 - 180 + 1).alias("lon_c")).sort("tile", "ph", "d")  # fixed row order -> reproducible model
 
-def main():
-    panel = build_panel()
+SEEDS = None   # shipped (v1.3.1): one model with PARAMS. The 5-seed mean (HQ D53) was tested and not adopted:
+               # see pipeline/experiments/seed_stability.py and data/processed/experiments/seed_ensemble/
+
+def ensemble_predict(train, target, feats, seeds):
+    """Mean prediction of len(seeds) deterministic LightGBM models (only the seed differs)."""
+    Xt, yt, Xp = train.select(feats).to_pandas(), train["s"].to_numpy(), target.select(feats).to_pandas()
+    if seeds is None:                                   # v1.3.1 behaviour: exactly the PARAMS model
+        return lgb.LGBMRegressor(**PARAMS).fit(Xt, yt).predict(Xp)
+    pred = None
+    for sd in seeds:
+        m = lgb.LGBMRegressor(**{**PARAMS, "random_state": sd, "seed": sd}).fit(Xt, yt)
+        p = m.predict(Xp)
+        pred = p if pred is None else pred + p
+    return pred / len(seeds)
+
+def compute_hy(seeds, panel=None):
+    panel = build_panel() if panel is None else panel
     feats = [c for c in panel.columns if c not in NOT_FEATURES]
     tr = panel.filter(pl.col("has_s") & ((pl.col("mask") & 7) == 7) & pl.col("year").is_in(list(FIT_YEARS_MODIS)))
-    model = lgb.LGBMRegressor(**PARAMS).fit(tr.select(feats).to_pandas(), tr["s"].to_numpy())
-    model.booster_.save_model(str(INTERIM / "hybrid_lgbm.txt"))
-    panel = panel.with_columns(pl.Series("ML", model.predict(panel.select(feats).to_pandas())))
     # M3 unit-day values on the days where h comes from Terra+Aqua (no VIIRS that day)
     td = pl.read_parquet(INTERIM / "tileday_dn.parquet")
     F = fit_final(td)
     ta_days = td.filter(((pl.col("mask") & 3) == 3) & ((pl.col("mask") & 12) == 0))
     m3 = predict(ta_days, F["ta"]).group_by("tile", "ph", "d").agg(pl.col("pred").sum().alias("M3"))
     x = panel.join(m3, on=["tile", "ph", "d"], how="inner").sort("tile", "ph", "d")
+    x = x.with_columns(pl.Series("ML", ensemble_predict(tr, x, feats, seeds)))
     um = ["tile", "ph", "year", "month"]
     x = x.with_columns(pl.when(pl.col("M3") > 0).then(pl.col("ML")).otherwise(0.0).alias("_ml"))
     x = x.with_columns(pl.col("M3").sum().over(um).alias("_m3m"), pl.col("_ml").sum().over(um).alias("_mlm"))
     x = x.with_columns(pl.when(pl.col("_mlm") > 0).then(pl.col("_m3m") * pl.col("_ml") / pl.col("_mlm")).otherwise(pl.col("M3")).alias("HY"))
-    x = x.with_columns(pl.when(pl.col("M3") > 0).then(pl.col("HY") / pl.col("M3")).otherwise(1.0).alias("f"))
+    return x.with_columns(pl.when(pl.col("M3") > 0).then(pl.col("HY") / pl.col("M3")).otherwise(1.0).alias("f"))
+
+def main():
+    x = compute_hy(SEEDS)
     x.select("tile", "ph", "d", "f").write_parquet(INTERIM / "hybrid_factors.parquet")
     x.select("tile", "ph", "d", "year", "month", "M3", "ML", "HY").write_parquet(INTERIM / "hybrid_panel.parquet")
     chk = x.group_by("year").agg(pl.col("M3").sum(), pl.col("HY").sum()).with_columns((pl.col("HY") / pl.col("M3") - 1).abs().alias("rel")).filter(pl.col("M3") > 0)
