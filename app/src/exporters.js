@@ -21,7 +21,7 @@ export function downloadCSV({ meta, agg, sel, from, to, cmp, ref, win, skipT, fi
     q('# India Fire Calendar export (NASA FIRMS MODIS + VIIRS, harmonized)'),
     q(`# Area: ${sel.name || ''} (${area}); 0.1 deg cells whose centre is inside: ${agg.nSel}, of which inside the data domain: ${agg.nCells}`),
     q(`# Date range: ${from} to ${to} (UTC days)`),
-    q(`# Data version: ${meta.version}`),
+    q(`# Data ${meta.version}`),
     q(`# harmonized = S-NPP-VIIRS-equivalent detections per day; *_raw = clean detections per satellite (not harmonized)`),
     q(`# median/p25/p75 = same calendar day across reference years ${ref?.[0]}-${ref?.[1]}${ref?.[0] <= 2002 ? ' (includes lower-confidence Terra-only years)' : ''} excluding the day's own year${skipT ? ' and terra_only days' : ''}; smoothing ${win > 1 ? win + '-day centred mean' : 'none'}`),
     q('# Empty cell = no satellite coverage that day (unknown, not zero)'),

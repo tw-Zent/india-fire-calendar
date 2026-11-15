@@ -161,3 +161,6 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .toc { font-size: .85rem; margin: 4px 0 10px; padding: 6px 8px; background: #fff; border: 1px solid #e3e6e9; border-radius: 6px; line-height: 1.8; }
 .md td, .md th { white-space: nowrap; }
 .md table { max-width: 100%; }
+/* Methods tables keep their column widths and scroll inside their own box on narrow screens (stakeholder-04 #10) */
+.md .tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; margin: 6px 0; }
+.md .tscroll table { display: table; margin: 0; }

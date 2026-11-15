@@ -50,7 +50,8 @@ export async function loadMeta() {
     if (di >= 0 && di < n_days) { mask[di] = cov.mask[i]; if (cov.regime) regime[di] = cov.regime[i]; }
   }
   meta = {
-    version: man.version + (man.h_status ? ` (h: ${man.h_status.replace(/_/g, ' ')})` : ''),
+    // e.g. "v1.3.1 (harmonization method v1.3)" (stakeholder-04 / HQ webapp-15)
+    version: `v${man.version}` + ((man.h_status || '').match(/v[\d.]+$/) ? ` (harmonization method ${man.h_status.match(/v[\d.]+$/)[0]})` : ''),
     h_method: man.h_method || null,
     hasRegime: !!cov.regime,
     regime,

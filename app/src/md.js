@@ -27,8 +27,8 @@ export function mdToHtml(md) {
       const rows = [];
       while (i < lines.length && lines[i].trim().startsWith('|')) { rows.push(lines[i].trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim())); i++; }
       const body = rows.filter((r) => !r.every((c) => /^:?-+:?$/.test(c)));
-      out.push('<table><thead><tr>' + body[0].map((c) => `<th>${inline(c)}</th>`).join('') + '</tr></thead><tbody>' +
-        body.slice(1).map((r) => '<tr>' + r.map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table>');
+      out.push('<div class="tscroll"><table><thead><tr>' + body[0].map((c) => `<th>${inline(c)}</th>`).join('') + '</tr></thead><tbody>' +
+        body.slice(1).map((r) => '<tr>' + r.map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>');
       continue;
     }
     if (/^\s*[-*]\s+/.test(l)) {

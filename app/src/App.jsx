@@ -203,7 +203,7 @@ export default function App() {
         ...(view === 'calendar' ? wrapText('Year marker (left edge) = data source: black VIIRS S-NPP direct · dark grey NOAA-20 filling S-NPP gap · grey MODIS-era estimate · orange Terra-only (lower confidence) · light blue mixed. Hatched = no coverage.') : []),
         ...wrapText(`Caution: ${overpassLine(meta, +from.slice(0, 4))}`),
         ...(disagree ? wrapText(disagreeText(meta, disagree)) : []),
-        `Reference years ${ref[0]}–${ref[1]} · data v${meta.rawVersion} (${meta.h_status || ''}) · harmonized = S-NPP-VIIRS-equivalent detections`,
+        `Reference years ${ref[0]}–${ref[1]} · Data ${meta.version} · harmonized = S-NPP-VIIRS-equivalent detections`,
         'NASA FIRMS MODIS/VIIRS · nasa-space-app-2026.web.app · AI-assisted (Claude, Anthropic), reviewed by Ashish Das'],
       caveats: [overpassLine(meta, +from.slice(0, 4)), ...(disagree ? [disagreeText(meta, disagree)] : [])],
     };
@@ -374,7 +374,7 @@ export default function App() {
                 <SensorYearsChart rows={sensorRows} log={sensLog} />
                 <DisagreeLine d={disagree} meta={meta} />
                 <p className="srcline"><b>If all satellites fall together, the change is in the fires, not in one sensor.</b> Raw counts differ in level because the satellites see fires differently; compare their shapes, not their heights. A satellite that covered under half of the window's days in a year (not yet launched or already retired) is left out for that year.</p>
-                <p className="note">Data version {meta.version}.</p>
+                <p className="note">Data {meta.version}.</p>
               </>
             )}
             {tab === 'download' && (
@@ -389,7 +389,7 @@ export default function App() {
         )}
       </section>
       <div className="sharebar bottom"><button className="small" onClick={copyLink}>{copied ? '✓ Link copied' : 'Copy link to this view'}</button></div>
-      <footer>Fire data: NASA FIRMS (part of LANCE and ESDIS; MODIS C6.1, VIIRS S-NPP and NOAA-20 C2), <a href="#about/m-how-to-cite">full acknowledgement</a>. Data version {meta?.version || '…'}. Map © OpenStreetMap contributors. Code: <a href={CODE_URL} target="_blank" rel="noopener">{CODE_URL.replace('https://', '')}</a>. {AI_NOTE}</footer>
+      <footer>Fire data: NASA FIRMS (part of LANCE and ESDIS; MODIS C6.1, VIIRS S-NPP and NOAA-20 C2), <a href="#about/m-how-to-cite">full acknowledgement</a>. Data {meta?.version || '…'}. Map © OpenStreetMap contributors. Code: <a href={CODE_URL} target="_blank" rel="noopener">{CODE_URL.replace('https://', '')}</a>. {AI_NOTE}</footer>
     </div>
   );
 }
@@ -737,12 +737,12 @@ function About({ meta }) {
       <p><a href="#">← Back to the calendar</a></p>
       <h1>Methods &amp; data</h1>
       <nav className="toc" aria-label="On this page">{TOC.map(([id, t], i) => <span key={id}>{i > 0 && ' · '}<a href={`#about/${id}`}>{t}</a></span>)}</nav>
-      <p className="note">Data version {meta?.version || '…'}. The section below comes straight from the data team's methods notes (data/processed/METHODS.md). For the data files, their format and how to cite them, see <a href="#data-readme">About the data files (README_DATA)</a>.</p>
+      <p className="note">Data {meta?.version || '…'}. The section below comes straight from the data team's methods notes (data/processed/METHODS.md). For the data files, their format and how to cite them, see <a href="#data-readme">About the data files (README_DATA)</a>.</p>
       {html === null ? <p>Loading…</p> : html ? <div className="md" dangerouslySetInnerHTML={{ __html: withAquaFigure(html) }} /> : <p className="slot">Methods notes not found in this build.</p>}
       {meta?.h_method && (
         <>
           <h2>Harmonized value in this version</h2>
-          <p>Data version {meta.rawVersion}: {meta.h_method}.</p>
+          <p>Data {meta.version}: {meta.h_method}.</p>
         </>
       )}
       {meta?.h_ratios && !meta?.h_method && (
